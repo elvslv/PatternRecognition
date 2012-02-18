@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 from PyQt4 import QtGui, QtCore
-import random
+import random, math
 
 class Labs_(QtGui.QWidget):
 	def __init__(self, parent, num):
@@ -40,7 +40,7 @@ class Lab1(Labs_):
 
 		fields = [
 					[u'Количество опытов', 'expNum', int],
-					[u'Длина отрезка', 'segmentLength', float],
+					[u'Радиус', 'segmentLength', float],
 					[u'Экспериментальная вероятность', 'expProb', str],
 					[u'Теоретическая вероятность', 'theorProb', str],
 					[u'Модуль разности', 'eps', str]
@@ -71,7 +71,7 @@ class Lab1(Labs_):
 
 		self.changeControlsVisibility(False)
 
-		self.defaultValues = [[100000, 0.504], [100000, 0.432], [100000, 0.036], [100000, 0.027],  [100000, 0.125]]
+		self.defaultValues = [[100000, 0.504], [100000, 0.432], [100000, 0.036], [100000, 0.027],  [100000, 1 - math.sqrt(3) / 2]]
 
 	def changeControlsVisibility(self, visible):
 		for i in range(self.solLayout.count()):
@@ -86,7 +86,7 @@ class Lab1(Labs_):
 				cnt += func(random.randint(0, 9999))
 			else:
 				l = self.segmentLength.value()
-			 	cnt += func(random.uniform(0, l), random.uniform(0, l))
+			 	cnt += func(random.uniform(-l, l))
 
 		result  = (cnt + 0.0) / self.expNum.value()
 		self.expProb.setText(str(result))
@@ -152,8 +152,8 @@ class Lab1(Labs_):
 		return result == 4
 
 
-	def check5(self, x, y):
-		l = (self.segmentLength.value() + 0.0) / 2
-		return (x <= l) and (y <= l) and (x + y >= l)
+	def check5(self, c):
+		r = self.segmentLength.value() + 0.0
+		return 4 * (r * r - c * c) <= r * r
 		
 		
