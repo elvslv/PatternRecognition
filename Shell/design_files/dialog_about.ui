@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AboutDialog</class>
+ <widget class="QDialog" name="AboutDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>442</width>
+    <height>101</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>О программе</string>
+  </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>421</width>
+     <height>81</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Практика по предмету &quot;Распознавание образов&quot;.
+Выполнила студентка группы С8403А 
+кафедры информатики, математического и компьютерного моделирования ДВФУ
+Васильева Елена
+e-mail:elvslv@gmail.com
+Владивосток, 2012 год</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

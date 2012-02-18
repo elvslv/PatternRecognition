@@ -1,0 +1,1 @@
+for %%I in (*.ui) do pyuic4 -o "%%~nI.py" "%%I"
