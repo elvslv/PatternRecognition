@@ -2,77 +2,169 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>693</width>
+    <width>1000</width>
     <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string/>
+  </property>
+  <property name="windowOpacity">
+   <double>1.000000000000000</double>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTabWidget" name="tabWidget">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>701</width>
-      <height>551</height>
-     </rect>
-    </property>
-    <property name="currentIndex">
-     <number>0</number>
-    </property>
-    <property name="tabsClosable">
-     <bool>true</bool>
-    </property>
-    <property name="movable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="lab1">
-     <attribute name="title">
-      <string>Лабораторная работа №1</string>
-     </attribute>
-    </widget>
-    <widget class="QWidget" name="lab2">
-     <attribute name="title">
-      <string>Лабораторная работа №2</string>
-     </attribute>
-    </widget>
-   </widget>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Triangular</enum>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="documentMode">
+       <bool>false</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="tab">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <attribute name="title">
+        <string>Tab 1</string>
+       </attribute>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <attribute name="title">
+        <string>Tab 2</string>
+       </attribute>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QLabel" name="statusLabel">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>693</width>
+     <width>1000</width>
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuLabs">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="title">
+     <string>Отчеты</string>
+    </property>
+    <addaction name="actionLab1"/>
+    <addaction name="actionLab2"/>
+   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Помощь</string>
     </property>
     <addaction name="actionAbout"/>
    </widget>
-   <widget class="QMenu" name="menuLabs">
-    <property name="title">
-     <string>Лабораторные работы</string>
-    </property>
-    <addaction name="actionLab1"/>
-    <addaction name="actionLab2"/>
-   </widget>
    <addaction name="menuLabs"/>
    <addaction name="menuHelp"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionLogin">
+   <property name="text">
+    <string>Войти</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionExit_2">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
   <action name="actionAbout">
    <property name="text">
     <string>О программе</string>
+   </property>
+  </action>
+  <action name="actionView">
+   <property name="text">
+    <string>Companies</string>
+   </property>
+  </action>
+  <action name="actionViewUsers">
+   <property name="text">
+    <string>Users</string>
+   </property>
+  </action>
+  <action name="actionViewEmployees">
+   <property name="text">
+    <string>Employees</string>
+   </property>
+  </action>
+  <action name="actionViewProjects">
+   <property name="text">
+    <string>Projects</string>
+   </property>
+  </action>
+  <action name="actionViewContracts">
+   <property name="text">
+    <string>Contracts</string>
+   </property>
+  </action>
+  <action name="actionViewProjectEmployees">
+   <property name="text">
+    <string>ProjectEmployees</string>
+   </property>
+  </action>
+  <action name="actionViewTasks">
+   <property name="text">
+    <string>Tasks</string>
+   </property>
+  </action>
+  <action name="actionViewJobs">
+   <property name="text">
+    <string>Jobs</string>
+   </property>
+  </action>
+  <action name="actionViewTasksDependencies">
+   <property name="text">
+    <string>TasksDependencies</string>
    </property>
   </action>
   <action name="actionLab1">
@@ -80,9 +172,112 @@
     <string>Лабораторная работа №1</string>
    </property>
   </action>
+  <action name="actionGantt_diagram">
+   <property name="text">
+    <string>Gantt diagram</string>
+   </property>
+  </action>
+  <action name="actionLogout">
+   <property name="text">
+    <string>Выйти из профиля</string>
+   </property>
+  </action>
+  <action name="actionViewCoaches">
+   <property name="text">
+    <string>Тренеры</string>
+   </property>
+  </action>
+  <action name="actionViewClients">
+   <property name="text">
+    <string>Клиенты</string>
+   </property>
+  </action>
+  <action name="actionViewFitness">
+   <property name="text">
+    <string>Фитнес</string>
+   </property>
+  </action>
+  <action name="actionViewGoods">
+   <property name="text">
+    <string>Товары</string>
+   </property>
+  </action>
+  <action name="actionViewSails">
+   <property name="text">
+    <string>Продажи</string>
+   </property>
+  </action>
+  <action name="action_2">
+   <property name="text">
+    <string>Закрыть</string>
+   </property>
+  </action>
   <action name="actionLab2">
    <property name="text">
     <string>Лабораторная работа №2</string>
+   </property>
+  </action>
+  <action name="actionSailFitness">
+   <property name="text">
+    <string>Фитнес</string>
+   </property>
+  </action>
+  <action name="actionSailGoods">
+   <property name="text">
+    <string>Продукция</string>
+   </property>
+  </action>
+  <action name="actionSailSolarium">
+   <property name="text">
+    <string>Солярий</string>
+   </property>
+  </action>
+  <action name="actionViewFitness_2">
+   <property name="text">
+    <string>Фитнес</string>
+   </property>
+  </action>
+  <action name="actionViewSolarium">
+   <property name="text">
+    <string>Солярий</string>
+   </property>
+  </action>
+  <action name="actionViewGoods_2">
+   <property name="text">
+    <string>Товары</string>
+   </property>
+  </action>
+  <action name="actionSolarium">
+   <property name="text">
+    <string>Солярий</string>
+   </property>
+  </action>
+  <action name="actionChangePassword">
+   <property name="text">
+    <string>Сменить пароль</string>
+   </property>
+  </action>
+  <action name="actionAddUser">
+   <property name="text">
+    <string>Добавить пользователя</string>
+   </property>
+  </action>
+  <action name="actionSalary">
+   <property name="text">
+    <string>Зарплата тренеров</string>
+   </property>
+  </action>
+  <action name="actionExpenses">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Расходы</string>
+   </property>
+  </action>
+  <action name="actionExpensesReport">
+   <property name="text">
+    <string>Расходы</string>
    </property>
   </action>
  </widget>
