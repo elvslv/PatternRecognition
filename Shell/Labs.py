@@ -39,22 +39,31 @@ class Lab1(Labs_):
 		layout.addLayout(self.solLayout)
 
 		fields = [
-					[u'Количество опытов', 'expNum'],
-					[u'Экспериментальная вероятность', 'expProb'],
-					[u'Теоретическая вероятность', 'theorProb'],
-					[u'Модуль разности', 'eps']
+					[u'Количество опытов', 'expNum', int],
+					[u'Длина отрезка', 'segmentLength', float],
+					[u'Экспериментальная вероятность', 'expProb', str],
+					[u'Теоретическая вероятность', 'theorProb', str],
+					[u'Модуль разности', 'eps', str]
 				]
 		row = 0
 		for row, field in enumerate(fields):
 			label = QtGui.QLabel(field[0])
 			self.solLayout.addWidget(label, row, 0)
-			setattr(self, field[1], QtGui.QSpinBox(self) if not row else QtGui.QLineEdit(self))
-			if row: 
-				getattr(self, field[1]).setReadOnly(False)
+			obj = None
+			if field[2] is int:
+				obj = QtGui.QSpinBox(self)
+				obj.setRange(0, 1000000000)
+			elif field[2] is float:
+				obj = QtGui.QDoubleSpinBox(self)
+				obj.setRange(0.01, 1000000000)
 			else:
-				getattr(self, field[1]).setMaximum(1000000000)
-			self.solLayout.addWidget(getattr(self, field[1]), row, 1)
-
+				obj = QtGui.QLineEdit(self)
+				obj.setReadOnly(True)
+				
+			setattr(self, field[1], obj)
+			self.solLayout.addWidget(obj, row, 1)
+			
+		self.segmentLength.setValue(1)
 		self.calc = QtGui.QPushButton(self)
 		self.calc.setText(u'Выполнить')
 		self.calc.clicked.connect(self.count)
@@ -62,23 +71,24 @@ class Lab1(Labs_):
 
 		self.changeControlsVisibility(False)
 
-		self.defaultValues = [[1000000, 0.504], [1000000, 0.432], [1000000, 0.036], [1000000, 0.027]]
+		self.defaultValues = [[100000, 0.504], [100000, 0.432], [100000, 0.036], [100000, 0.027],  [100000, 0.125]]
 
 	def changeControlsVisibility(self, visible):
 		for i in range(self.solLayout.count()):
 			self.solLayout.itemAt(i).widget().setVisible(visible)
 
-	def solve(self):
-		self.changeControlsVisibility(True)
-		self.count()
-
 	def count(self):
 		task = self.subtasksComboBox.currentIndex()
 		cnt = 0
 		for i in range(self.expNum.value()):
-			cnt += getattr(self, 'check%s' % task)(random.randint(0, 9999))
+			func = getattr(self, 'check%s' % task)
+			if task != 5:
+				cnt += func(random.randint(0, 9999))
+			else:
+				l = self.segmentLength.value()
+			 	cnt += func(random.uniform(0, l), random.uniform(0, l))
+
 		result  = (cnt + 0.0) / self.expNum.value()
-		print result
 		self.expProb.setText(str(result))
 		self.eps.setText(str(abs(result - self.defaultValues[task - 1][1])))
 	
@@ -91,8 +101,10 @@ class Lab1(Labs_):
 		self.expNum.setValue(self.defaultValues[index - 1][0])
 		self.theorProb.setText(str(self.defaultValues[index - 1][1]))
 
-		if index in range(1, 5):
-			self.solve()
+		self.segmentLength.setDisabled(index in range(1, 5))
+		self.changeControlsVisibility(True)
+		self.count()
+
 
 	def getDigits(self, n):
 		return [n / 1000, (n / 100) % 10, (n / 10) % 10, n % 10]
@@ -137,8 +149,11 @@ class Lab1(Labs_):
 						if k != i and k != j:
 							if a[k] == a[6 - k - j - i]:
 								result += 1
-		
 		return result == 4
-		
+
+
+	def check5(self, x, y):
+		l = (self.segmentLength.value() + 0.0) / 2
+		return (x <= l) and (y <= l) and (x + y >= l)
 		
 		
