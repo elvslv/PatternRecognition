@@ -2,6 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 import random, math
+from threading import Thread
 
 class Labs_(QtGui.QWidget):
 	def __init__(self, parent, num):
@@ -10,9 +11,31 @@ class Labs_(QtGui.QWidget):
 		self.labNum = num
 
 
+
+class labThread(Thread):
+	def __init__ (self, lab, task):
+		Thread.__init__(self)
+		self.task = task
+		self.func = getattr(lab, 'check%s' % task)
+		self.expNum = lab.expNum.value()
+		self.l = lab.segmentLength.value()
+		self.lab = lab
+
+	def run(self):
+		self.lab.parent.changeState(u'Выполняется...')
+		cnt = 0
+		for i in range(self.expNum):
+			cnt += self.func(random.randint(0, 9999) if self.task != 5 else random.uniform(-self.l, self.l))
+		result  = (cnt + 0.0) / self.expNum
+		self.lab.expProb.setText(str(result))
+		self.lab.eps.setText(str(abs(result - self.lab.defaultValues[self.task - 1][1])))
+		self.lab.parent.changeState('')
+
+
 class Lab1(Labs_):
 	def __init__(self, parent):
 		super(Lab1, self).__init__(parent, 1)
+		self.parent = parent
 
 		self.verticalLayout = QtGui.QVBoxLayout(self)
 		self.setLayout(self.verticalLayout)
@@ -49,6 +72,8 @@ class Lab1(Labs_):
 		for row, field in enumerate(fields):
 			label = QtGui.QLabel(field[0])
 			self.solLayout.addWidget(label, row, 0)
+			if field[1] == 'segmentLength':
+				self.segmentLengthLabel = label;
 			obj = None
 			if field[2] is int:
 				obj = QtGui.QSpinBox(self)
@@ -79,18 +104,8 @@ class Lab1(Labs_):
 
 	def count(self):
 		task = self.subtasksComboBox.currentIndex()
-		cnt = 0
-		for i in range(self.expNum.value()):
-			func = getattr(self, 'check%s' % task)
-			if task != 5:
-				cnt += func(random.randint(0, 9999))
-			else:
-				l = self.segmentLength.value()
-			 	cnt += func(random.uniform(-l, l))
-
-		result  = (cnt + 0.0) / self.expNum.value()
-		self.expProb.setText(str(result))
-		self.eps.setText(str(abs(result - self.defaultValues[task - 1][1])))
+		thread = labThread(self, task)
+		thread.start()
 	
 	@QtCore.pyqtSlot(int)
 	def comboboxChanged(self, index):
@@ -101,10 +116,10 @@ class Lab1(Labs_):
 		self.expNum.setValue(self.defaultValues[index - 1][0])
 		self.theorProb.setText(str(self.defaultValues[index - 1][1]))
 
-		self.segmentLength.setDisabled(index in range(1, 5))
 		self.changeControlsVisibility(True)
+		self.segmentLength.setVisible(index not in range(1, 5))
+		self.segmentLengthLabel.setVisible(index not in range(1, 5))
 		self.count()
-
 
 	def getDigits(self, n):
 		return [n / 1000, (n / 100) % 10, (n / 10) % 10, n % 10]
