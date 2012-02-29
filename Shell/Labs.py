@@ -49,6 +49,8 @@ class Lab1(Labs_):
 		for row, field in enumerate(fields):
 			label = QtGui.QLabel(field[0])
 			self.solLayout.addWidget(label, row, 0)
+			if field[1] == 'segmentLength':
+				self.segmentLengthLabel = label;
 			obj = None
 			if field[2] is int:
 				obj = QtGui.QSpinBox(self)
@@ -101,8 +103,9 @@ class Lab1(Labs_):
 		self.expNum.setValue(self.defaultValues[index - 1][0])
 		self.theorProb.setText(str(self.defaultValues[index - 1][1]))
 
-		self.segmentLength.setDisabled(index in range(1, 5))
 		self.changeControlsVisibility(True)
+		self.segmentLength.setVisible(index not in range(1, 5))
+		self.segmentLengthLabel.setVisible(index not in range(1, 5))
 		self.count()
 
 
