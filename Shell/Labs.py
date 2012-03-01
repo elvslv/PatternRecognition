@@ -302,10 +302,26 @@ class Lab2(Labs_):
 			self.solLayout.itemAt(i).widget().setVisible(visible)
 
 	def count(self):
-		task = self.subtasksComboBox.currentIndex()
-		thread = labThread(self, task)
-		thread.start()
-	
+		m = 0
+		D = 0
+		gamma = 0
+		k = 0
+		N = len(self.sample)
+		for v in self.sample:
+			val = (v / 100) + ((v / 10) % 10) + (v % 10)
+			m += val
+		m /= (N + 0.0)
+		for v in self.sample:
+			val = (v / 100) + ((v / 10) % 10) + (v % 10)
+			D += math.pow(val - m,  2)
+			gamma += math.pow(val - m,  3)
+			k += math.pow(val - m,  4)
+		D /= (N + 0.0)
+		gamma /= N * math.pow(D, 3 / 2)
+		k /= N * math.pow(D,  2)
+		k -= 3
+		print m, D, gamma, k
+		
 	@QtCore.pyqtSlot(int)
 	def comboboxChanged(self, index):
 		if not index:
