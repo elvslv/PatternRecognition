@@ -29,6 +29,10 @@ class MyStaticMplCanvas(MyMplCanvas):
 	def plot(self, x, y):
 		self.axes.plot(x, y)
 		self.draw()
+		
+	def hist(self, x):
+		self.axes.hist(x, bins = 28)
+		self.draw()
 
 class labThread2(Thread):
 	def __init__ (self, parent, run):
@@ -45,9 +49,15 @@ class Lab2(Labs_):
 
 		self.verticalLayout = QtGui.QVBoxLayout(self)
 		self.setLayout(self.verticalLayout)
-
-        	self.sc = MyStaticMplCanvas(self, width=28, height=1000, dpi=100)
-		self.verticalLayout.addWidget(self.sc)
+		
+		self.sc1 = MyStaticMplCanvas(self, width=28, height=1000, dpi=100)
+		self.sc2 = MyStaticMplCanvas(self, width=28, height=1000, dpi=100)
+		
+		tabWidget = QtGui.QTabWidget(self)
+		self.verticalLayout.addWidget(tabWidget)
+		tabWidget.addTab(self.sc1, u'Многоугольник')
+		tabWidget.addTab(self.sc2, u'Гистограмма')
+		#self.verticalLayout.addWidget(self.sc)
 		
 		self.subtasksComboBox = QtGui.QComboBox(self)
 		self.verticalLayout.addWidget(self.subtasksComboBox)
@@ -130,7 +140,6 @@ class Lab2(Labs_):
 				if not j:
 					self.results[i][j].setText(str(self.answers[i]))
 
-
 		self.changeControlsVisibility()
 
 	def selectFilePressed(self):
@@ -177,11 +186,14 @@ class Lab2(Labs_):
 	def startAnalyze(self):
 		ans = [0 for i in range(4)] #m, D, gamma, k
 		N = len(self.sample)
+		self.sample1 = []
 		self.graph = [0 for i in range(28)]
 		for v in self.sample:
 			val = (v / 100) + ((v / 10) % 10) + (v % 10)
 			self.graph[val] += 1
 			ans[0] += val
+			self.sample1.append(val)
+			
 		ans[0] /= (N + 0.0)
 		for v in self.sample:
 			val = (v / 100) + ((v / 10) % 10) + (v % 10)
@@ -195,7 +207,15 @@ class Lab2(Labs_):
 		for i in range(4):
 			self.results[i][1].setText(str(ans[i]))
 			self.results[i][2].setText(str(abs(ans[i] - self.answers[i])))
-		self.sc.plot([i for i in range(28)], self.graph)		
+		sum = 0
+		res = [0 for i in range(28)]
+		for i in range(28):
+			sum += (self.graph[i] + 0.0) / N
+			res[i] = sum
+		#self.graph = sorted(self.graph, key=lambda g: g[0]) 
+		self.sc2.hist(self.sample1)
+		self.sc1.plot([i for i in range(28)], res)	
+					
 		self.analyzedSignal.emit()			
 			
 	def generate(self):
