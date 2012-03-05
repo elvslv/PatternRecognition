@@ -26,26 +26,19 @@ class MyMplCanvas(FigureCanvas):
 		FigureCanvas.updateGeometry(self)
 
 class MyStaticMplCanvas(MyMplCanvas):
-	def plot_(self, x, y):
+	def plot(self, x, y):
 		self.axes.plot(x, y)
 		self.draw()
 
 class labThread2(Thread):
-	def __init__ (self, lab):
+	def __init__ (self, parent, run):
 		Thread.__init__(self)
-		self.expNum = lab.expNum.value()
-		self.lab = lab
-
-	def run(self):
-		self.lab.parent.changeState(u'Выполняется...')
-		cnt = 0
-		for i in range(self.expNum):
-			self.lab.sample.append(random.randint(0, 999))
-		self.lab.parent.changeState('')
-		self.lab.generatedSignal.emit()
+		self.parent = parent
+		self.run = run
 
 class Lab2(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
+	analyzedSignal = QtCore.pyqtSignal()
 	def __init__(self, parent):
 		super(Lab2, self).__init__(parent, 1)
 		self.parent = parent
@@ -77,41 +70,68 @@ class Lab2(Labs_):
 		self.source = QtGui.QComboBox(self)
 		self.solLayout.addWidget(self.source, 0, 1)
 		self.source.addItems([u'Сгенерировать выборку', u'Загрузить из файла'])
+		self.source.currentIndexChanged.connect(self.changeControlsVisibility)
+		
+		self.selectFile = QtGui.QPushButton(self)
+		self.selectFile.setText(u'Выбрать файл')
+		self.solLayout.addWidget(self.selectFile, 1, 0)
+		self.selectFile.clicked.connect(self.selectFilePressed)
 		
 		label = QtGui.QLabel(u'Количество элементов выборки')
-		self.solLayout.addWidget(label, 1, 0)
+		self.solLayout.addWidget(label, 2, 0)
 		self.expNum = QtGui.QSpinBox(self)
-		self.solLayout.addWidget(self.expNum, 1, 1)
+		self.solLayout.addWidget(self.expNum, 2, 1)
 		self.expNum.setRange(1, 1000000000)
 		self.expNum.setValue(1000000)
 		
 		self.gen = [[label, self.expNum]]
 		
 		label = QtGui.QLabel(u'Не сохранять в файл')
-		self.solLayout.addWidget(label, 2, 0)
+		self.solLayout.addWidget(label, 3, 0)
 		self.dontSave = QtGui.QCheckBox(self)
-		self.solLayout.addWidget(self.dontSave, 2, 1)
+		self.solLayout.addWidget(self.dontSave, 3, 1)
 		btn = QtGui.QPushButton(self)
 		btn.setText(u'Сгенерировать выборку')
 		btn.clicked.connect(self.generate)
-		self.solLayout.addWidget(btn, 3, 0)
+		self.solLayout.addWidget(btn, 4, 0)
 		self.isGeneratedLabel = QtGui.QLabel(u'Выборка не сгенерирована')
-		self.solLayout.addWidget(self.isGeneratedLabel, 3, 1)
+		self.solLayout.addWidget(self.isGeneratedLabel, 4, 1)
 		self.isGenerated = False
 		self.gen[0].extend([label, self.dontSave, btn, self.isGeneratedLabel])	
 
-		self.selectFile = QtGui.QPushButton(self)
-		self.selectFile.setText(u'Выбрать файл')
-		self.solLayout.addWidget(self.selectFile, 4, 0)
-		self.selectFile.clicked.connect(self.selectFilePressed)
 		self.calc = QtGui.QPushButton(self)
 		self.calc.setText(u'Анализировать выборку')
 		self.calc.clicked.connect(self.count)
 		self.solLayout.addWidget(self.calc, 5, 0)
 		self.generatedSignal.connect(self.generated)
-		#self.changeControlsVisibility(False)
+		self.analyzedSignal.connect(self.analyzed)
+		
+		self.answers = [13.5, 24.75, 0, -0.40808]
+		
+		self.results = [[] for i in range(4)]
+		
+		labels1 = [u'Теоретический результат', u'Экспериментальный результат', u'Разница']
+		labels2 = [u'Мат. ожидание', u'Дисперсия', u'Асимметрия', u'Эксцесс']
+		
+		for i, l in enumerate(labels1):
+			label = QtGui.QLabel(l)
+			self.solLayout.addWidget(label, 0, 3 + i)
+			
+		for i, l in enumerate(labels2):
+			label = QtGui.QLabel(l)
+			self.solLayout.addWidget(label, 1 + i, 2)
+			
+		for i in range(len(labels2)):
+			self.results.append([])
+			for j in range(len(labels1)):
+				self.results[i].append(QtGui.QLineEdit(self))
+				self.results[i][j].setReadOnly(True)
+				self.solLayout.addWidget(self.results[i][j], 1 + i, 3 + j)
+				if not j:
+					self.results[i][j].setText(str(self.answers[i]))
 
-		#self.defaultValues = [[100000, 0.504], [100000, 0.432], [100000, 0.036], [100000, 0.027],  [100000, 1 - math.sqrt(3) / 2]]
+
+		self.changeControlsVisibility()
 
 	def selectFilePressed(self):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
@@ -137,6 +157,7 @@ class Lab2(Labs_):
 	def generated(self):
 		self.isGenerated = True
 		self.isGeneratedLabel.setText(u'Выборка сгенерирована')
+		self.parent.changeState('')
 		if not self.dontSave.isChecked():
 			f = open('result.txt', 'w')
 			f.write('%s ' %  self.expNum.value())
@@ -144,51 +165,71 @@ class Lab2(Labs_):
 				f.write('%s ' %  v)
 			f.close()
 
-	def generate(self):
-		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
-		self.isGenerated = False
-		self.sample = []
-		thread = labThread2(self)
-		thread.start()
-
-	def changeControlsVisibility(self, visible):
-		for i in range(self.solLayout.count()):
-			self.solLayout.itemAt(i).widget().setVisible(visible)
-
-	def count(self):
-		m = 0
-		D = 0
-		gamma = 0
-		k = 0
+	def analyzed(self):
+		self.parent.changeState('')
+			
+	def startGenerate(self):
+		N = self.expNum.value()
+		for i in range(N):
+			self.sample.append(random.randint(0, 999))
+		self.generatedSignal.emit()			
+			
+	def startAnalyze(self):
+		ans = [0 for i in range(4)] #m, D, gamma, k
 		N = len(self.sample)
 		self.graph = [0 for i in range(28)]
 		for v in self.sample:
 			val = (v / 100) + ((v / 10) % 10) + (v % 10)
 			self.graph[val] += 1
-			m += val
-		m /= (N + 0.0)
+			ans[0] += val
+		ans[0] /= (N + 0.0)
 		for v in self.sample:
 			val = (v / 100) + ((v / 10) % 10) + (v % 10)
-			D += math.pow(val - m,  2)
-			gamma += math.pow(val - m,  3)
-			k += math.pow(val - m,  4)
-		D /= (N + 0.0)
-		gamma /= N * math.pow(D, 3 / 2)
-		k /= N * math.pow(D,  2)
-		k -= 3
-		self.sc.plot_([i for i in range(28)], self.graph)
-		print m, D, gamma, k, self.graph
-		
+			ans[1] += math.pow(val - ans[0],  2)
+			ans[2] += math.pow(val - ans[0],  3)
+			ans[3] += math.pow(val - ans[0],  4)
+		ans[1] /= (N + 0.0)
+		ans[2] /= N * math.pow(ans[1], 3 / 2)
+		ans[3] /= N * math.pow(ans[1], 2)
+		ans[3] -= 3
+		for i in range(4):
+			self.results[i][1].setText(str(ans[i]))
+			self.results[i][2].setText(str(abs(ans[i] - self.answers[i])))
+		self.sc.plot([i for i in range(28)], self.graph)		
+		self.analyzedSignal.emit()			
+			
+	def generate(self):
+		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
+		self.isGenerated = False
+		self.sample = []
+		self.parent.changeState(u'Выполняется...')
+		thread = labThread2(self, self.startGenerate)
+		thread.start()
+
+	def changeControlsVisibility(self):
+		i = self.source.currentIndex()
+		for item in self.gen[0]:
+			item.setVisible(not i)
+		self.selectFile.setVisible(i)
+		#for i in range(self.solLayout.count()):
+		#	self.solLayout.itemAt(i).widget().setVisible(visible)
+
+	def count(self):
+		self.parent.changeState(u'Анализируется...')
+		thread = labThread2(self, self.startAnalyze)
+		thread.start()
+
+
 	@QtCore.pyqtSlot(int)
 	def comboboxChanged(self, index):
 		if not index:
-			self.changeControlsVisibility(False)
+			self.changeControlsVisibility()
 			return
 
 		self.expNum.setValue(self.defaultValues[index - 1][0])
 		self.theorProb.setText(str(self.defaultValues[index - 1][1]))
 
-		self.changeControlsVisibility(True)
+		self.changeControlsVisibility()
 		self.segmentLength.setVisible(index not in range(1, 5))
 		self.segmentLengthLabel.setVisible(index not in range(1, 5))
 		self.count()
