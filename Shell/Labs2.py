@@ -132,7 +132,6 @@ class Lab2(Labs_):
 		self.solLayout.addWidget(btn, 4, 0)
 		self.isGeneratedLabel = QtGui.QLabel(u'Выборка не сгенерирована')
 		self.solLayout.addWidget(self.isGeneratedLabel, 4, 1)
-		self.isGenerated = False
 		self.gen[0].extend([label, self.dontSave, btn, self.isGeneratedLabel])	
 
 		self.calc = QtGui.QPushButton(self)
@@ -157,6 +156,33 @@ class Lab2(Labs_):
 			label = QtGui.QLabel(l)
 			self.solLayout.addWidget(label, 1 + i, 2)
 			
+		self.groupLabel = QtGui.QLabel(u'Количество группируемых элементов')
+		self.solLayout.addWidget(self.groupLabel, 5, 2)
+		self.groupLabel.setVisible(False)
+		self.groupedElements = QtGui.QSpinBox(self)
+		self.groupedElements.setValue(100)
+		self.groupedElements.setRange(100, 10000)
+		self.solLayout.addWidget(self.groupedElements, 5, 3)
+		self.groupedElements.setVisible(False)
+
+		self.leftLabel = QtGui.QLabel(u'Левая граница')
+		self.solLayout.addWidget(self.leftLabel, 6, 2)
+		self.leftLabel.setVisible(False)
+		self.leftBorder = QtGui.QSpinBox(self)
+		self.leftBorder.setRange(-1000000, 0)
+		self.leftBorder.setValue(-10)
+		self.solLayout.addWidget(self.leftBorder, 6, 3)
+		self.leftBorder.setVisible(False)
+		
+		self.rightLabel = QtGui.QLabel(u'Правая граница')
+		self.solLayout.addWidget(self.rightLabel, 7, 2)
+		self.rightLabel.setVisible(False)
+		self.rightBorder = QtGui.QSpinBox(self)
+		self.rightBorder.setValue(10)
+		self.rightBorder.setRange(0, 1000000)
+		self.solLayout.addWidget(self.rightBorder, 7, 3)
+		self.rightBorder.setVisible(False)
+		
 		for i in range(len(self.labels2)):
 			self.results.append([])
 			for j in range(len(self.labels1)):
@@ -172,7 +198,6 @@ class Lab2(Labs_):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
 		if os.path.isfile(fname):
 			self.isGeneratedLabel.setText(u'Загружается выборка...')
-			self.isGenerated = False
 			self.sample = []
 			try:
 				f = open(fname, 'r')
@@ -190,7 +215,6 @@ class Lab2(Labs_):
 				showMessage(u'Ошибка', u'Некорректный формат файла')
 
 	def generated(self):
-		self.isGenerated = True
 		self.isGeneratedLabel.setText(u'Выборка сгенерирована')
 		self.parent.changeState('')
 		if not self.dontSave.isChecked():
@@ -219,8 +243,8 @@ class Lab2(Labs_):
 	def startGenerateContinious(self):
 		N = self.expNum.value()
 		cnt = 0
-		a = -10 #-2.185124219
-		b = 10#2.185124219
+		a = self.leftBorder.value()
+		b = self.rightBorder.value()
 		f_max = 1 / math.sqrt(math.pi)
 		
 		while(cnt < N):
@@ -260,6 +284,7 @@ class Lab2(Labs_):
 		self.graph = self.countStatParams(0)
 		sum = 0
 		res = [0 for i in range(28)]
+		N = len(self.sample)
 		for i in range(28):
 			sum += (self.graph[i] + 0.0) / N
 			res[i] = sum
@@ -270,16 +295,15 @@ class Lab2(Labs_):
 
 	def startAnalyzeContinious(self):
 		self.countStatParams(1)
-		self.sc2.hist(self.sample, 100) #must be optional!!!
+		self.sc2.hist(self.sample, self.groupedElements.value())
 		F = ECDF(self.sample)
-		x, f = F.count()
+		x, f = F.count(self.leftBorder.value(), self.rightBorder.value())
 		self.sc1.plot(x, f)	
 					
 		self.analyzedSignal.emit()		
 		
 	def generate(self):
 		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
-		self.isGenerated = False
 		self.sample = []
 		self.parent.changeState(u'Выполняется...')
 		thread = labThread2(self, self.startGenerateDiscrete if not self.subtasksComboBox.currentIndex() else self.startGenerateContinious)
@@ -291,14 +315,10 @@ class Lab2(Labs_):
 			item.setVisible(not i)
 		self.selectFile.setVisible(i)
 		
-		#for i in range(self.solLayout.count()):
-		#	self.solLayout.itemAt(i).widget().setVisible(visible)
-
 	def count(self):
 		self.parent.changeState(u'Анализируется...')
 		thread = labThread2(self, self.startAnalyzeDescrete if not self.subtasksComboBox.currentIndex() else self.startAnalyzeContinious)
 		thread.start()
-
 
 	@QtCore.pyqtSlot(int)
 	def comboboxChanged(self, index):
@@ -306,3 +326,11 @@ class Lab2(Labs_):
 		for i in range(len(self.labels2)):
 			for j in range(len(self.labels1)):
 					self.results[i][j].setText(str(self.answers[task][i] if not j else 0))
+		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
+		
+		self.groupLabel.setVisible(task)
+		self.leftLabel.setVisible(task)
+		self.rightLabel.setVisible(task)
+		self.groupedElements.setVisible(task)
+		self.leftBorder.setVisible(task)
+		self.rightBorder.setVisible(task)
