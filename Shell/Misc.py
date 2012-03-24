@@ -1,7 +1,7 @@
 from PyQt4 import QtGui, QtCore
 
 global NUM_OF_LABS;
-NUM_OF_LABS = 2;
+NUM_OF_LABS = 3;
 
 def showMessage(title, message):
 	mbox = QtGui.QMessageBox(QtGui.QMessageBox.Critical, title,

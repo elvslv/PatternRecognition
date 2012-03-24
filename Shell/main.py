@@ -4,6 +4,7 @@ import os
 from Misc import *
 from Labs import*
 from Labs2 import*
+from Labs3 import *
 
 from PyQt4 import QtGui, QtCore
 

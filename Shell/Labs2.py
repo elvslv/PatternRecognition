@@ -40,11 +40,11 @@ class ECDF:
 
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
-		fig = Figure(figsize=(width, height), dpi=dpi)
-		self.axes = fig.add_subplot(111)
+		self.fig = Figure(figsize=(width, height), dpi=dpi)
+		self.axes = self.fig.add_subplot(111)
 # We want the axes cleared every time plot() is called
 		self.axes.hold(False)
-		FigureCanvas.__init__(self, fig)
+		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
 		FigureCanvas.setSizePolicy(self,
@@ -58,8 +58,11 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 		
 	def hist(self, x, b = 28):
-		self.axes.hist(x, bins = b)
+		self.axes.hist(x, bins = b, normed = True)
 		self.draw()
+
+	def clear(self):
+		self.plot([], [])
 
 class labThread2(Thread):
 	def __init__ (self, parent, run):
@@ -118,7 +121,7 @@ class Lab2(Labs_):
 		self.expNum = QtGui.QSpinBox(self)
 		self.solLayout.addWidget(self.expNum, 2, 1)
 		self.expNum.setRange(1, 1000000000)
-		self.expNum.setValue(1000000)
+		self.expNum.setValue(100000)
 		
 		self.gen = [[label, self.expNum]]
 		
@@ -325,7 +328,7 @@ class Lab2(Labs_):
 		task = self.subtasksComboBox.currentIndex()
 		for i in range(len(self.labels2)):
 			for j in range(len(self.labels1)):
-					self.results[i][j].setText(str(self.answers[task][i] if not j else 0))
+					self.results[i][j].setText(str(self.answers[task][i] if not j else ''))
 		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
 		
 		self.groupLabel.setVisible(task)
@@ -334,3 +337,5 @@ class Lab2(Labs_):
 		self.groupedElements.setVisible(task)
 		self.leftBorder.setVisible(task)
 		self.rightBorder.setVisible(task)
+		self.sc2.clear()
+		self.sc1.clear()
