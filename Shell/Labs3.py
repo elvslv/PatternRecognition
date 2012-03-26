@@ -19,7 +19,7 @@ class MyMplCanvas(FigureCanvas):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
 # We want the axes cleared every time plot() is called
-		self.axes.hold(False)
+		#self.axes.hold(False)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
@@ -29,21 +29,32 @@ class MyMplCanvas(FigureCanvas):
 		FigureCanvas.updateGeometry(self)
 
 class MyStaticMplCanvas(MyMplCanvas):
-	def plot(self, x, y):
-		self.axes.plot(x, y)
-		self.draw()
+	def plot(self, x, y, ch):
+		if ch:
+			self.axes.plot(x, y, ch, zorder = 0)
+		else:
+			self.axes.plot(x, y, zorder = 0)
+		#self.draw()
 		
 	def contour(self, X, Y, Z):
 		self.axes.contour(X, Y, Z)
-		self.draw()
+		#self.draw()
 		
 	def hist(self, x, b = 28):
 		self.axes.hist(x, bins = b, normed = True)
 		self.draw()
 
 	def clear(self):
-		self.plot([], [])
+		self.axes.hold(False)
+		self.axes.plot([], [])
+		self.axes.hold(True)
+	
+	def draw_(self):
+		self.draw()
 
+	def set_zorder(self, level):
+		self.axes.set_zorder(level)
+		
 class labThread3(Thread):
 	def __init__ (self, parent, run):
 		Thread.__init__(self)
@@ -118,10 +129,10 @@ class ParametersDialog(QtGui.QDialog):
 			for j in range(self.distributionDimension.value()):
 				item = self.covariationMatrix.item(i, j)
 				if not item:
-					item = QtGui.QTableWidgetItem('0')
+					item = QtGui.QTableWidgetItem('0' if i != j else '1')
 					self.covariationMatrix.setItem(i, j, item)
 				elif item.text() == '':
-					item.setText('0')			
+					item.setText('0' if i != j else '1')			
 		
 class Lab3(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
@@ -134,8 +145,7 @@ class Lab3(Labs_):
 		self.verticalLayout = QtGui.QVBoxLayout(self)
 		self.setLayout(self.verticalLayout)
 		
-		self.sc1 = MyStaticMplCanvas(self, width=28, height=1000, dpi=100)
-		self.sc2 = MyStaticMplCanvas(self, width=28, height=1000, dpi=100)
+		self.sc1 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
 		
 		tabWidget = QtGui.QTabWidget(self)
 		self.verticalLayout.addWidget(tabWidget)
@@ -174,13 +184,13 @@ class Lab3(Labs_):
 		self.solLayout.addWidget(label, 3, 0)
 		self.dontSave = QtGui.QCheckBox(self)
 		self.solLayout.addWidget(self.dontSave, 3, 1)
-		btn = QtGui.QPushButton(self)
-		btn.setText(u'Сгенерировать выборку')
-		btn.clicked.connect(self.generate)
-		self.solLayout.addWidget(btn, 4, 0)
+		self.generateBtn = QtGui.QPushButton(self)
+		self.generateBtn.setText(u'Сгенерировать выборку')
+		self.generateBtn.clicked.connect(self.generate)
+		self.solLayout.addWidget(self.generateBtn, 4, 0)
 		self.isGeneratedLabel = QtGui.QLabel(u'Выборка не сгенерирована')
 		self.solLayout.addWidget(self.isGeneratedLabel, 4, 1)
-		self.gen[0].extend([label, self.dontSave, btn, self.isGeneratedLabel])	
+		self.gen[0].extend([label, self.dontSave, self.generateBtn, self.isGeneratedLabel])	
 
 		self.calc = QtGui.QPushButton(self)
 		self.calc.setText(u'Анализировать выборку')
@@ -194,37 +204,17 @@ class Lab3(Labs_):
 		self.setParametersBtn.clicked.connect(self.showParametersDialog)
 		self.solLayout.addWidget(self.setParametersBtn, 5, 1)
 			
-#		self.leftLabel = QtGui.QLabel(u'Левая граница')
-#		self.solLayout.addWidget(self.leftLabel, 0, 2)
-#		self.leftBorder = QtGui.QSpinBox(self)
-#		self.leftBorder.setRange(-1000000, 0)
-#		self.leftBorder.setValue(-10)
-##		self.solLayout.addWidget(self.leftBorder, 0, 3)
-		
-#		self.rightLabel = QtGui.QLabel(u'Правая граница')
-#		self.solLayout.addWidget(self.rightLabel, 1, 2)
-#		self.rightBorder = QtGui.QSpinBox(self)
-#		self.rightBorder.setValue(10)
-#		self.rightBorder.setRange(0, 1000000)
-#		self.solLayout.addWidget(self.rightBorder, 1, 3)
-		
-#		self.groupLabel = QtGui.QLabel(u'Количество группируемых элементов')
-#		self.solLayout.addWidget(self.groupLabel, 2, 2)
-#		self.groupedElements = QtGui.QSpinBox(self)
-#		self.groupedElements.setValue(100)
-#		self.groupedElements.setRange(100, 10000)
-#		self.solLayout.addWidget(self.groupedElements, 2, 3)
-
+		self.isGenerated = False	
+		self.parameters = None	
 		self.changeControlsVisibility()
 
 	def showParametersDialog(self):
-		#self.parent.changeState(u'Параметры загружаются...')
 		paramsDialog = ParametersDialog(self)
 		paramsDialog.open()
 	
 	def parametersGot(self, parameters):
 		self.parameters = parameters
-		#self.parent.changeState(u'Параметры загружены')
+		self.changeControlsVisibility()
 		
 	def selectFilePressed(self):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
@@ -248,25 +238,24 @@ class Lab3(Labs_):
 
 	def generated(self):
 		self.isGeneratedLabel.setText(u'Выборка сгенерирована')
+		self.isGenerated = True
+		#print self.sample
+		self.changeControlsVisibility()
 		self.parent.changeState('')
-		if not self.dontSave.isChecked():
-			f = open('result.txt', 'w')
-			f.write('%s ' %  self.expNum.value())
-			for v in self.sample:
-				f.write('%s ' %  v)
-			f.close()
+		#if not self.dontSave.isChecked():
+		#	f = open('result.txt', 'w')
+		#	f.write('%s ' %  self.expNum.value())
+		#	for v in self.sample:
+		#		f.write('%s ' %  v)
+		#	f.close()
 
 	def analyzed(self):
 		self.parent.changeState('')
 			
-	def distributionDensity(self, x):
-		return pow(math.e, -x * x) / (math.sqrt(math.pi))
-	
-	def distributionFunction(self, x):
-		return (1 + math.erf(x)) / (2 + 0.0)
-	
 	def startGenerate(self):
 		N = self.expNum.value()
+		self.isGenerated = False
+		self.changeControlsVisibility()
 		self.sample = np.random.multivariate_normal(self.parameters.expectations, 
 				self.parameters.covariation, N)
 		self.generatedSignal.emit()		
@@ -295,21 +284,20 @@ class Lab3(Labs_):
 		return self.graph
 		
 	def startAnalyze(self):
-		#self.countStatParams(1)
-		#self.sc2.hist(self.sample, self.groupedElements.value())
-		#F = ECDF(self.sample)
 		x = [self.sample[i][0] for i in range(self.expNum.value())]
 		y = [self.sample[i][1] for i in range(self.expNum.value())]
-		self.sc1.plot(x, y)	
-		N = 100
-		x1 = np.linspace(-3.0, 3.0, N)
-		y1 = np.linspace(-2.0, 2.0, N)
+		self.sc1.clear()
+		self.sc1.plot(x, y, '.')	
+		N = 1000
+		x1 = np.linspace(-5.0, 5.0, N)
+		y1 = np.linspace(-5.0, 5.0, N)
 
 		X, Y = np.meshgrid(x1, y1)
 		Z = mlab.bivariate_normal(X, Y, self.parameters.covariation[0][0], 
 			self.parameters.covariation[1][1], self.parameters.expectations[0],
 			self.parameters.expectations[1], self.parameters.covariation[0][1])
-		self.sc2.contour(X, Y, Z)				
+		self.sc1.contour(X, Y, Z)	
+		self.sc1.draw_()
 		self.analyzedSignal.emit()		
 		
 	def generate(self):
@@ -324,6 +312,8 @@ class Lab3(Labs_):
 		for item in self.gen[0]:
 			item.setVisible(not i)
 		self.selectFile.setVisible(i)
+		self.generateBtn.setDisabled(self.parameters is None)
+		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
 		
 	def count(self):
 		self.parent.changeState(u'Анализируется...')
