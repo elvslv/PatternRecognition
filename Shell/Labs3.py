@@ -36,8 +36,9 @@ class MyStaticMplCanvas(MyMplCanvas):
 			self.axes.plot(x, y, zorder = 0)
 		#self.draw()
 		
-	def contour(self, X, Y, Z):
-		self.axes.contour(X, Y, Z)
+	def contour(self, X, Y, Z, lvlsNum):
+		CS = self.axes.contour(X, Y, Z, lvlsNum)
+		self.axes.clabel(CS, inline=1, fontsize=10)
 		#self.draw()
 		
 	def hist(self, x, b = 28):
@@ -62,10 +63,10 @@ class labThread3(Thread):
 		self.run = run
 
 class DistributionParameters():
-	def __init__(self, dimention, expectations, covariation):
-		self.dimention = dimention.value()
-		self.expectations = np.array([float(expectations.item(0, i).text()) for i in range(self.dimention)])
-		self.covariation = np.array([[float(covariation.item(i, j).text()) for j in range(self.dimention)] for i in range(self.dimention)])
+	def __init__(self, dimension, expectations, covariation):
+		self.dimension = dimension.value()
+		self.expectations = np.array([float(expectations.item(0, i).text()) for i in range(self.dimension)])
+		self.covariation = np.array([[float(covariation.item(i, j).text()) for j in range(self.dimension)] for i in range(self.dimension)])
 		if not self.covariationIsValid():
 			return
 			
@@ -150,7 +151,6 @@ class Lab3(Labs_):
 		tabWidget = QtGui.QTabWidget(self)
 		self.verticalLayout.addWidget(tabWidget)
 		tabWidget.addTab(self.sc1, u'Плотность распределения')
-		tabWidget.addTab(self.sc2, u'Статистическая плотность распределения')
 		
 		layout = QtGui.QVBoxLayout(self)
 		self.verticalLayout.addLayout(layout)
@@ -203,6 +203,12 @@ class Lab3(Labs_):
 		self.setParametersBtn.setText(u'Указать параметры выборки')
 		self.setParametersBtn.clicked.connect(self.showParametersDialog)
 		self.solLayout.addWidget(self.setParametersBtn, 5, 1)
+
+		self.frstVar = QtGui.QComboBox(self)
+		self.solLayout.addWidget(self.frstVar, 6, 0)
+
+		self.scndVar = QtGui.QComboBox(self)
+		self.solLayout.addWidget(self.scndVar, 6, 1)
 			
 		self.isGenerated = False	
 		self.parameters = None	
@@ -214,6 +220,11 @@ class Lab3(Labs_):
 	
 	def parametersGot(self, parameters):
 		self.parameters = parameters
+		self.frstVar.clear()
+		self.scndVar.clear()
+		for i in range (self.parameters.dimension):
+			self.frstVar.addItem(str(i + 1))
+			self.scndVar.addItem(str(i + 1))
 		self.changeControlsVisibility()
 		
 	def selectFilePressed(self):
@@ -284,8 +295,10 @@ class Lab3(Labs_):
 		return self.graph
 		
 	def startAnalyze(self):
-		x = [self.sample[i][0] for i in range(self.expNum.value())]
-		y = [self.sample[i][1] for i in range(self.expNum.value())]
+		x_ = self.frstVar.currentIndex()
+		y_ = self.scndVar.currentIndex()
+		x = [self.sample[i][x_] for i in range(self.expNum.value())]
+		y = [self.sample[i][y_] for i in range(self.expNum.value())]
 		self.sc1.clear()
 		self.sc1.plot(x, y, '.')	
 		N = 1000
@@ -293,10 +306,10 @@ class Lab3(Labs_):
 		y1 = np.linspace(-5.0, 5.0, N)
 
 		X, Y = np.meshgrid(x1, y1)
-		Z = mlab.bivariate_normal(X, Y, self.parameters.covariation[0][0], 
-			self.parameters.covariation[1][1], self.parameters.expectations[0],
-			self.parameters.expectations[1], self.parameters.covariation[0][1])
-		self.sc1.contour(X, Y, Z)	
+		Z = mlab.bivariate_normal(X, Y, self.parameters.covariation[x_][x_], 
+			self.parameters.covariation[y_][y_], self.parameters.expectations[x_],
+			self.parameters.expectations[y_], self.parameters.covariation[x_][y_])
+		self.sc1.contour(X, Y, Z, 10)	
 		self.sc1.draw_()
 		self.analyzedSignal.emit()		
 		
