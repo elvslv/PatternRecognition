@@ -63,15 +63,74 @@ class labThread3(Thread):
 		self.run = run
 
 class DistributionParameters():
-	def __init__(self, dimension, expectations, covariation):
-		self.dimension = dimension.value()
-		self.expectations = np.array([float(expectations.item(0, i).text()) for i in range(self.dimension)])
-		self.covariation = np.array([[float(covariation.item(i, j).text()) for j in range(self.dimension)] for i in range(self.dimension)])
+	def __init__(self, t, dimension, expectations, covariation):
+		if not t:
+			self.dimension = dimension.value()
+			self.expectations = np.array([float(expectations.item(0, i).text()) for i in range(self.dimension)])
+			self.covariation = np.array([[float(covariation.item(i, j).text()) for j in range(self.dimension)] for i in range(self.dimension)])
+		else:
+			self.dimension = dimension
+			self.expectations = np.array(expectations)
+			self.covariation = np.array(covariation)
+			
 		if not self.covariationIsValid():
 			return
 			
 	def covariationIsValid(self):
 		return True
+
+class ResultsDialog(QtGui.QDialog):
+	def __init__(self, parent, parameters, results):
+		super(ResultsDialog, self).__init__(parent)
+		
+		self.parent = parent
+		self.parameters = parameters
+		self.results = results
+		
+		self.layout = QtGui.QGridLayout(self)
+		self.layout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
+		self.setLayout(self.layout)
+
+		label = QtGui.QLabel(u'Теоретические данные')
+		self.layout.addWidget(label, 0, 1)
+		label = QtGui.QLabel(u'Выборочные данные')
+		self.layout.addWidget(label, 0, 2)
+		
+		label = QtGui.QLabel(u'Вектор средних')
+		self.layout.addWidget(label, 1, 0)
+		self.expectationVector1 = QtGui.QTableWidget(self)
+		self.layout.addWidget(self.expectationVector1, 1, 1)
+		self.initExpectationsVector(self.parameters.expectations, self.expectationVector1, self.parameters.dimension)
+
+		self.expectationVector2 = QtGui.QTableWidget(self)
+		self.layout.addWidget(self.expectationVector2, 1, 2)
+		self.initExpectationsVector(self.results.expectations, self.expectationVector2, self.results.dimension)
+
+		label = QtGui.QLabel(u'Матрица ковариации')
+		self.layout.addWidget(label, 2, 0)
+		self.covariationMatrix1 = QtGui.QTableWidget(self)
+		self.layout.addWidget(self.covariationMatrix1, 2, 1)
+		self.initCovariationMatrix(self.parameters.covariation, self.covariationMatrix1, self.parameters.dimension)
+
+		self.covariationMatrix2 = QtGui.QTableWidget(self)
+		self.layout.addWidget(self.covariationMatrix2, 2, 2)
+		self.initCovariationMatrix(self.results.covariation, self.covariationMatrix2, self.results.dimension)
+
+	def initExpectationsVector(self, source, dest, dimension):
+		dest.setColumnCount(dimension)
+		dest.setRowCount(1)
+		for i in range(dimension):
+			item = QtGui.QTableWidgetItem(str(source[i]))
+			dest.setItem(0, i, item)
+
+	def initCovariationMatrix(self, source, dest, dimension):
+		dest.setRowCount(dimension)
+		dest.setColumnCount(dimension)
+		for i in range(dimension):
+			for j in range(dimension):
+				item = QtGui.QTableWidgetItem(str(source[i][j]))
+				dest.setItem(i, j, item)
+		
 		
 class ParametersDialog(QtGui.QDialog):
 	def __init__(self, parent):
@@ -107,9 +166,10 @@ class ParametersDialog(QtGui.QDialog):
 		self.dimensionChanged()
 
 	def onAccept(self):
-		dp = DistributionParameters(self.distributionDimension, self.expectationVector, self.covariationMatrix)
+		dp = DistributionParameters(0, self.distributionDimension, self.expectationVector, self.covariationMatrix)
 		if (dp):
 			self.parent.parametersGot(dp)
+			self.parent.results = None
 			self.close();
 		else:
 			showMessage(u'Неправильные параметры')
@@ -205,14 +265,37 @@ class Lab3(Labs_):
 		self.solLayout.addWidget(self.setParametersBtn, 5, 1)
 
 		self.frstVar = QtGui.QComboBox(self)
+		self.frstVar.currentIndexChanged.connect(self.frstVarChanged)
 		self.solLayout.addWidget(self.frstVar, 6, 0)
 
 		self.scndVar = QtGui.QComboBox(self)
+		self.scndVar.currentIndexChanged.connect(self.scndVarChanged)
 		self.solLayout.addWidget(self.scndVar, 6, 1)
+
+		self.showResults = QtGui.QPushButton(self)
+		self.showResults.setText(u'Показать выборочные данные')
+		self.showResults.clicked.connect(self.showStat)
+		self.solLayout.addWidget(self.showResults, 7, 0)
 			
 		self.isGenerated = False	
 		self.parameters = None	
+		self.results = None
 		self.changeControlsVisibility()
+
+	def showStat(self):
+		statDialog = ResultsDialog(self, self.parameters, self.results)
+		statDialog.open()
+
+	def varIndexChanged(self, var, index):
+		if self.frstVar.currentIndex() == self.scndVar.currentIndex():
+			tmpVar = self.frstVar if var else self.scndVar
+			tmpVar.setCurrentIndex(0 if tmpVar.currentIndex() else 1)
+				
+	def frstVarChanged(self, index):
+		self.varIndexChanged(0, index)
+
+	def scndVarChanged(self, index):
+		self.varIndexChanged(1, index)
 
 	def showParametersDialog(self):
 		paramsDialog = ParametersDialog(self)
@@ -225,6 +308,8 @@ class Lab3(Labs_):
 		for i in range (self.parameters.dimension):
 			self.frstVar.addItem(str(i + 1))
 			self.scndVar.addItem(str(i + 1))
+		self.frstVar.setCurrentIndex(0)
+		self.scndVar.setCurrentIndex(1)
 		self.changeControlsVisibility()
 		
 	def selectFilePressed(self):
@@ -250,7 +335,6 @@ class Lab3(Labs_):
 	def generated(self):
 		self.isGeneratedLabel.setText(u'Выборка сгенерирована')
 		self.isGenerated = True
-		#print self.sample
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 		#if not self.dontSave.isChecked():
@@ -261,6 +345,7 @@ class Lab3(Labs_):
 		#	f.close()
 
 	def analyzed(self):
+		self.changeControlsVisibility()
 		self.parent.changeState('')
 			
 	def startGenerate(self):
@@ -270,29 +355,28 @@ class Lab3(Labs_):
 		self.sample = np.random.multivariate_normal(self.parameters.expectations, 
 				self.parameters.covariation, N)
 		self.generatedSignal.emit()		
-		#print self.sample
 		
-	def countStatParams(self, task):
-		ans = [0 for i in range(4)] #m, D, gamma, k
+	def countStatParams(self):
 		N = len(self.sample)
-		self.graph = [0 for i in range(28)]
-		for v in self.sample:
-			if not task:
-				self.graph[v] += 1
-			ans[0] += v
-		ans[0] /= (N + 0.0)
-		for v in self.sample:
-			ans[1] += math.pow(v - ans[0],  2)
-			ans[2] += math.pow(v - ans[0],  3)
-			ans[3] += math.pow(v - ans[0],  4)
-		ans[1] /= (N + 0.0)
-		ans[2] /= N * math.pow(ans[1], (3 + 0.0) / 2)
-		ans[3] /= N * math.pow(ans[1], 2)
-		ans[3] -= 3
-		for i in range(4):
-			self.results[i][1].setText(str(ans[i]))
-			self.results[i][2].setText(str(abs(ans[i] - self.answers[task][i])))
-		return self.graph
+		M = self.parameters.dimension
+		m = [0 for i in range(M)]
+		for i in range(M):
+			sum = 0
+			for j in range(N):
+				sum += self.sample[j][i]
+			m[i] = (sum + 0.0) / N
+
+		r = [[0 for i in range(M)] for j in range(M)]
+		for j in range(M):
+			for l in range(M):
+				sum = 0
+				for i in range(N):
+					sum += (self.sample[i][j] - m[j]) * (self.sample[i][l] - m[l])
+				r[j][l] = r[l][j] = (sum + 0.0) / N
+
+		self.results = DistributionParameters(1, M, m, r)
+		self.changeControlsVisibility()
+
 		
 	def startAnalyze(self):
 		x_ = self.frstVar.currentIndex()
@@ -315,6 +399,7 @@ class Lab3(Labs_):
 		
 	def generate(self):
 		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
+		self.results = None
 		self.sample = []
 		self.parent.changeState(u'Выполняется...')
 		thread = labThread3(self, self.startGenerate)
@@ -327,9 +412,12 @@ class Lab3(Labs_):
 		self.selectFile.setVisible(i)
 		self.generateBtn.setDisabled(self.parameters is None)
 		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
+		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
 		self.parent.changeState(u'Анализируется...')
-		thread = labThread3(self, self.startAnalyze)
-		thread.start()
+		thread1 = labThread3(self, self.startAnalyze)
+		thread1.start()
+		thread2 = labThread3(self, self.countStatParams)
+		thread2.start()
 
