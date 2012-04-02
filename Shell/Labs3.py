@@ -13,6 +13,7 @@ from matplotlib.figure import Figure
 from matplotlib import mlab
 import pylab
 import numpy as np
+import numpy.linalg as linalg
 
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -29,16 +30,16 @@ class MyMplCanvas(FigureCanvas):
 		FigureCanvas.updateGeometry(self)
 
 class MyStaticMplCanvas(MyMplCanvas):
-	def plot(self, x, y, ch):
+	def plot(self, x, y, ch, col):
 		if ch:
-			self.axes.plot(x, y, ch, zorder = 0)
+			self.axes.plot(x, y, ch, zorder = 0, color = col)
 		else:
-			self.axes.plot(x, y, zorder = 0)
+			self.axes.plot(x, y, zorder = 0, color = col)
 		#self.draw()
 		
-	def contour(self, X, Y, Z, lvlsNum):
-		CS = self.axes.contour(X, Y, Z, lvlsNum)
-		self.axes.clabel(CS, inline=1, fontsize=10)
+	def contour(self, X, Y, Z, lvlsNum, col):
+		CS = self.axes.contour(X, Y, Z, lvlsNum, colors = col)
+		#self.axes.clabel(CS, inline=1, fontsize=10)
 		#self.draw()
 		
 	def hist(self, x, b = 28):
@@ -73,12 +74,21 @@ class DistributionParameters():
 			self.expectations = np.array(expectations)
 			self.covariation = np.array(covariation)
 			
-		if not self.covariationIsValid():
-			return
 			
 	def covariationIsValid(self):
-		return True
+		try:
+			L = linalg.cholesky(self.covariation)
+		except:	
+			showMessage('Error', 'Matrix is not positive definite')
+			return False
+		for i in range(self.dimension):
+			for j in range(self.dimension):
+				if self.covariation[i][j] != self.covariation[j][i]:
+					showMessage('Error', 'Matrix is not symmetric')
+					return False
 
+		return True
+		
 class ResultsDialog(QtGui.QDialog):
 	def __init__(self, parent, parameters, results):
 		super(ResultsDialog, self).__init__(parent)
@@ -133,46 +143,54 @@ class ResultsDialog(QtGui.QDialog):
 		
 		
 class ParametersDialog(QtGui.QDialog):
-	def __init__(self, parent):
+	def __init__(self, parent, initParams = None):
 		super(ParametersDialog, self).__init__(parent)
 		
 		self.parent = parent
 		
 		self.layout = QtGui.QGridLayout(self)
-		self.layout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
+		self.layout.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
 		self.setLayout(self.layout)
 		
 		label = QtGui.QLabel(u'Размерность выборки')
+		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 		self.layout.addWidget(label, 0, 0)
 		self.distributionDimension = QtGui.QSpinBox(self)
 		self.distributionDimension.setMinimum(2)
+		self.distributionDimension.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 		self.layout.addWidget(self.distributionDimension, 0, 1)
 		self.distributionDimension.valueChanged.connect(self.dimensionChanged)
 		
 		label = QtGui.QLabel(u'Вектор средних')
+		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 		self.layout.addWidget(label, 1, 0)
 		self.expectationVector = QtGui.QTableWidget(self)
 		self.expectationVector.setRowCount(1)
+		self.expectationVector.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 		self.layout.addWidget(self.expectationVector, 1, 1)
 
 		label = QtGui.QLabel(u'Матрица ковариации')
+		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 		self.layout.addWidget(label, 2, 0)
 		self.covariationMatrix = QtGui.QTableWidget(self)
+		self.covariationMatrix.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 		self.layout.addWidget(self.covariationMatrix, 2, 1)
 		
 		bb = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok or QDialogButtonBox.Cancel)
 		self.layout.addWidget(bb, 3, 0)
 		bb.accepted.connect(self.onAccept)
 		self.dimensionChanged()
+		if initParams:
+			self.distributionDimension.setValue(initParams.dimension)
+			self.initExpectationsVector(initParams.expectations, self.expectationVector, initParams.dimension)
+			self.initCovariationMatrix(initParams.covariation, self.covariationMatrix, initParams.dimension)
 
 	def onAccept(self):
 		dp = DistributionParameters(0, self.distributionDimension, self.expectationVector, self.covariationMatrix)
-		if (dp):
+		if (dp and dp.covariationIsValid()):
 			self.parent.parametersGot(dp)
 			self.parent.results = None
 			self.close();
-		else:
-			showMessage(u'Неправильные параметры')
 		
 	def dimensionChanged(self):
 		self.expectationVector.setColumnCount(self.distributionDimension.value())
@@ -194,6 +212,21 @@ class ParametersDialog(QtGui.QDialog):
 					self.covariationMatrix.setItem(i, j, item)
 				elif item.text() == '':
 					item.setText('0' if i != j else '1')			
+
+	def initExpectationsVector(self, source, dest, dimension):
+		dest.setColumnCount(dimension)
+		dest.setRowCount(1)
+		for i in range(dimension):
+			item = QtGui.QTableWidgetItem(str(source[i]))
+			dest.setItem(0, i, item)
+
+	def initCovariationMatrix(self, source, dest, dimension):
+		dest.setRowCount(dimension)
+		dest.setColumnCount(dimension)
+		for i in range(dimension):
+			for j in range(dimension):
+				item = QtGui.QTableWidgetItem(str(source[i][j]))
+				dest.setItem(i, j, item)
 		
 class Lab3(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
@@ -298,7 +331,7 @@ class Lab3(Labs_):
 		self.varIndexChanged(1, index)
 
 	def showParametersDialog(self):
-		paramsDialog = ParametersDialog(self)
+		paramsDialog = ParametersDialog(self, self.parameters)
 		paramsDialog.open()
 	
 	def parametersGot(self, parameters):
@@ -319,16 +352,30 @@ class Lab3(Labs_):
 			self.sample = []
 			try:
 				f = open(fname, 'r')
-				for i, val in enumerate(f.read().split()):
-					v = int(val)
-					assert v > 0 if not i else v >= 0 and v <= 999
-					if not i:
-						self.expNum.setValue(v)
-					else:
-						self.sample.append(v)
+				res = f.read().split()
+				M = int(res[0])
+				exp = [float(res[i + 1]) for i in range(M)]
+				cov = []
+				l = M + 1
+				for i in range(M):
+					cov.append([])
+					for j in range(M):
+						cov[i].append(float(res[l]))
+						l += 1
+				parameters = DistributionParameters(1, M, exp, cov)
+				N = int(res[l])
+				self.expNum.setValue(N)
+				l += 1
+				for i in range(N):
+					self.sample.append([])
+					for j in range(M):
+						self.sample[i].append(float(res[l]))
+						l += 1
 				f.close()
-				self.isGeneratedLabel.setText(u'Выборка загружена')
-			except (Exception, e):
+				self.isGenerated = True
+				self.parametersGot(parameters)
+				self.isGeneratedLabel.setText(u'Выборка загружена')			
+			except:
 				self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
 				showMessage(u'Ошибка', u'Некорректный формат файла')
 
@@ -337,14 +384,11 @@ class Lab3(Labs_):
 		self.isGenerated = True
 		self.changeControlsVisibility()
 		self.parent.changeState('')
-		#if not self.dontSave.isChecked():
-		#	f = open('result.txt', 'w')
-		#	f.write('%s ' %  self.expNum.value())
-		#	for v in self.sample:
-		#		f.write('%s ' %  v)
-		#	f.close()
 
 	def analyzed(self):
+		if self.analyzeCnt < 2:
+			return
+		self.sc1.draw_()
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 			
@@ -354,6 +398,14 @@ class Lab3(Labs_):
 		self.changeControlsVisibility()
 		self.sample = np.random.multivariate_normal(self.parameters.expectations, 
 				self.parameters.covariation, N)
+		if not self.dontSave.isChecked():
+			f = open('result.txt', 'w')
+			f.write('%s %s\n' %  (self.expNum.value(), self.parameters.dimension))
+			for i in range(self.expNum.value()):
+				for j in range(self.parameters.dimension):
+					f.write('%s ' %  self.sample[i][j])
+				f.write('\n');
+			f.close()
 		self.generatedSignal.emit()		
 		
 	def countStatParams(self):
@@ -375,26 +427,52 @@ class Lab3(Labs_):
 				r[j][l] = r[l][j] = (sum + 0.0) / N
 
 		self.results = DistributionParameters(1, M, m, r)
-		self.changeControlsVisibility()
 
+		x_ = self.frstVar.currentIndex()
+		y_ = self.scndVar.currentIndex()
+		N = 1000
+		x1 = np.linspace(-(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], 
+			(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], N)
+		y1 = np.linspace(-(self.results.covariation[y_][y_] + 7) + self.results.expectations[y_], 
+			(self.results.covariation[y_][y_] + 7) + self.results.expectations[y_], N)
+
+		X, Y = np.meshgrid(x1, y1)
+		Z = mlab.bivariate_normal(X, Y, math.sqrt(self.results.covariation[x_][x_]), 
+			math.sqrt(self.results.covariation[y_][y_]), self.results.expectations[x_],
+			self.results.expectations[y_], self.results.covariation[x_][y_])
+		self.sc1.contour(X, Y, Z, 10, 'yellow')	
+		
+		self.analyzeCnt += 1
+		self.analyzedSignal.emit()	
 		
 	def startAnalyze(self):
 		x_ = self.frstVar.currentIndex()
 		y_ = self.scndVar.currentIndex()
-		x = [self.sample[i][x_] for i in range(self.expNum.value())]
-		y = [self.sample[i][y_] for i in range(self.expNum.value())]
+		x = []
+		y = []
+		if self.expNum.value() > 1000000: #10^6 -- maxsize
+			for i in range(self.expNum.value()):
+				if random.randint(0, self.expNum.value() - 1) < 1000000:
+					x.append(self.sample[i][x_])
+					y.append(self.sample[i][y_])
+		else:
+			x = [self.sample[i][x_] for i in range(self.expNum.value())]
+			y = [self.sample[i][y_] for i in range(self.expNum.value())]
 		self.sc1.clear()
-		self.sc1.plot(x, y, '.')	
+		self.sc1.plot(x, y, '.', 'black')	
 		N = 1000
-		x1 = np.linspace(-5.0, 5.0, N)
-		y1 = np.linspace(-5.0, 5.0, N)
+		x1 = np.linspace(-(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], 
+			(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], N)
+		y1 = np.linspace(-(self.parameters.covariation[y_][y_]  + 7)+ self.parameters.expectations[y_], 
+			(self.parameters.covariation[y_][y_] + 7 ) + self.parameters.expectations[y_], N)
 
 		X, Y = np.meshgrid(x1, y1)
-		Z = mlab.bivariate_normal(X, Y, self.parameters.covariation[x_][x_], 
-			self.parameters.covariation[y_][y_], self.parameters.expectations[x_],
+		Z = mlab.bivariate_normal(X, Y, math.sqrt(self.parameters.covariation[x_][x_]), 
+			math.sqrt(self.parameters.covariation[y_][y_]), self.parameters.expectations[x_],
 			self.parameters.expectations[y_], self.parameters.covariation[x_][y_])
-		self.sc1.contour(X, Y, Z, 10)	
-		self.sc1.draw_()
+		self.sc1.contour(X, Y, Z, 10, 'red')	
+
+		self.analyzeCnt += 1
 		self.analyzedSignal.emit()		
 		
 	def generate(self):
@@ -415,6 +493,7 @@ class Lab3(Labs_):
 		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
+		self.analyzeCnt = 0;
 		self.parent.changeState(u'Анализируется...')
 		thread1 = labThread3(self, self.startAnalyze)
 		thread1.start()
