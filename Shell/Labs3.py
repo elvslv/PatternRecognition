@@ -154,6 +154,7 @@ class ParametersDialog(QtGui.QDialog):
 		
 		label = QtGui.QLabel(u'Размерность выборки')
 		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+		label.setMaximumSize(QtCore.QSize(150, 30))
 		self.layout.addWidget(label, 0, 0)
 		self.distributionDimension = QtGui.QSpinBox(self)
 		self.distributionDimension.setMinimum(2)
@@ -163,6 +164,7 @@ class ParametersDialog(QtGui.QDialog):
 		
 		label = QtGui.QLabel(u'Вектор средних')
 		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+		label.setMaximumSize(QtCore.QSize(150, 30))
 		self.layout.addWidget(label, 1, 0)
 		self.expectationVector = QtGui.QTableWidget(self)
 		self.expectationVector.setRowCount(1)
@@ -171,6 +173,7 @@ class ParametersDialog(QtGui.QDialog):
 
 		label = QtGui.QLabel(u'Матрица ковариации')
 		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+		label.setMaximumSize(QtCore.QSize(150, 30))
 		self.layout.addWidget(label, 2, 0)
 		self.covariationMatrix = QtGui.QTableWidget(self)
 		self.covariationMatrix.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -284,6 +287,7 @@ class Lab3(Labs_):
 		self.isGeneratedLabel = QtGui.QLabel(u'Выборка не сгенерирована')
 		self.solLayout.addWidget(self.isGeneratedLabel, 4, 1)
 		self.gen[0].extend([label, self.dontSave, self.generateBtn, self.isGeneratedLabel])	
+		self.dontSave.setChecked(True)
 
 		self.calc = QtGui.QPushButton(self)
 		self.calc.setText(u'Анализировать выборку')
