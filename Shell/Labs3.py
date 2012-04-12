@@ -239,7 +239,7 @@ class Lab3(Labs_):
 		super(Lab3, self).__init__(parent, 1)
 		self.parent = parent
 
-		self.verticalLayout = QtGui.QVBoxLayout(self)
+		self.verticalLayout = QtGui.QHBoxLayout(self)
 		self.setLayout(self.verticalLayout)
 		
 		self.sc1 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
