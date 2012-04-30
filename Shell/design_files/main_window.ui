@@ -93,6 +93,7 @@
     <addaction name="actionLab1"/>
     <addaction name="actionLab2"/>
     <addaction name="actionLab3"/>
+    <addaction name="actionLab4"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -284,6 +285,11 @@
   <action name="actionLab3">
    <property name="text">
     <string>Лабораторная работа №3</string>
+   </property>
+  </action>
+  <action name="actionLab4">
+   <property name="text">
+    <string>Лабораторная работа №4</string>
    </property>
   </action>
  </widget>
