@@ -43,9 +43,11 @@ class MyStaticMplCanvas(MyMplCanvas):
 		#self.draw()
 		
 	def clear(self):
+		self.axes.hold(False)
 		self.axes.plot([], [])
-		self.draw()
-		self.axes.autoscale(enable=True, axis='both', tight=True)
+		self.axes.hold(True)
+		#self.draw()
+		#self.axes.autoscale(enable=True, axis='both', tight=True)
 
 	def draw_(self):
 		self.draw()
@@ -55,7 +57,7 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.axes.vlines(x, ymin, ymax, colors = 'blue')
 		self.axes.relim()
 		self.draw()
-		self.axes.autoscale(enable=True, axis='both', tight=True)
+		#self.axes.autoscale(enable=True, axis='both', tight=True)
 
 class DigitalSignal:
 	def __init__(self, N):
