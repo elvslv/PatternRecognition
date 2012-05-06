@@ -58,7 +58,7 @@ class MainWindow(QtGui.QMainWindow):
 				return
 
 		lab = globals()["Lab%s" % num](self)
-		self.ui.tabWidget.addTab(lab, 'Лабораторная работа №{0}'.format(num))
+		self.ui.tabWidget.addTab(lab, u'Лабораторная работа №{0}'.format(num))
 		self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.count() - 1)
 
 	@QtCore.pyqtSlot(int)

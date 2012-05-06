@@ -14,10 +14,18 @@ import pylab
 import numpy as np
 import numpy.linalg as linalg
 
+class labThread4(Thread):
+	def __init__ (self, parent, run):
+		Thread.__init__(self)
+		self.parent = parent
+		self.run = run
+
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=5, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
+		self.axes.set_autoscale_on(True)
+		#self.axes.hold(False)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
@@ -35,12 +43,19 @@ class MyStaticMplCanvas(MyMplCanvas):
 		#self.draw()
 		
 	def clear(self):
-		self.axes.hold(False)
 		self.axes.plot([], [])
-		self.axes.hold(True)
-	
+		self.draw()
+		self.axes.autoscale(enable=True, axis='both', tight=True)
+
 	def draw_(self):
 		self.draw()
+
+	def vlines(self, x, ymin, ymax):
+		print x, ymin, ymax
+		self.axes.vlines(x, ymin, ymax, colors = 'blue')
+		self.axes.relim()
+		self.draw()
+		self.axes.autoscale(enable=True, axis='both', tight=True)
 
 class DigitalSignal:
 	def __init__(self, N):
@@ -48,7 +63,7 @@ class DigitalSignal:
 
 class DigitalSignal1(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.n0 = layout.itemAtPosition(0, 1).value()
+		self.n0 = layout.itemAtPosition(0, 1).widget().value()
 	
 	def generate(self):
 		u = [1 if i == self.n0 else 0 for i in range(self.N)]
@@ -63,7 +78,7 @@ class DigitalSignal1(DigitalSignal):
 
 class DigitalSignal2(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.n0 = layout.itemAtPosition(0, 1).value()	
+		self.n0 = layout.itemAtPosition(0, 1).widget().value()	
 	
 	def generate(self):
 		u = [0 if i < self.n0 else 1 for i in range(self.N)]
@@ -78,7 +93,7 @@ class DigitalSignal2(DigitalSignal):
 
 class DigitalSignal3(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()		
+		self.a = layout.itemAtPosition(0, 1).widget().value()		
 	
 	def generate(self):
 		u = [math.pow(self.a, i) for i in range(self.N)]
@@ -94,9 +109,9 @@ class DigitalSignal3(DigitalSignal):
 		
 class DigitalSignal4(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.omega = layout.itemAtPosition(1, 1).value()
-		self.phi = layout.itemAtPosition(2, 1).value()		
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.omega = layout.itemAtPosition(1, 1).widget().value()
+		self.phi = layout.itemAtPosition(2, 1).widget().value()		
 		
 	def generate(self):
 		u = [self.a * math.sin(i * omega + phi) for i in range(self.N)]
@@ -119,7 +134,7 @@ class DigitalSignal4(DigitalSignal):
 		
 class DigitalSignal5(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.L = layout.itemAtPosition(0, 1).value()		
+		self.L = layout.itemAtPosition(0, 1).widget().value()		
 	
 	def generate(self):
 		u = [1 if i % L < L / 2.0 else -1  for i in range(self.N)]
@@ -136,7 +151,7 @@ class DigitalSignal5(DigitalSignal):
 		
 class DigitalSignal6(DigitalSignal):
 	def getDataFromLayout(self, layout):
-		self.L = layout.itemAtPosition(0, 1).value()		
+		self.L = layout.itemAtPosition(0, 1).widget().value()		
 		
 	def generate(self):
 		u = [(i % L) / (L + 0.0)  for i in range(self.N)]
@@ -156,10 +171,10 @@ class DigitalSignal7(DigitalSignal):
 		return u
 
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.omega = layout.itemAtPosition(1, 1).value()
-		self.phi = layout.itemAtPosition(2, 1).value()		
-		self.tau = layout.itemAtPosition(3, 1).value()		
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.omega = layout.itemAtPosition(1, 1).widget().value()
+		self.phi = layout.itemAtPosition(2, 1).widget().value()		
+		self.tau = layout.itemAtPosition(3, 1).widget().value()		
 		
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Амплитуда')
@@ -186,10 +201,10 @@ class DigitalSignal8(DigitalSignal):
 		return u
 
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.omega = layout.itemAtPosition(1, 1).value()
-		self.phi = layout.itemAtPosition(2, 1).value()		
-		self.u = layout.itemAtPosition(3, 1).value()				
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.omega = layout.itemAtPosition(1, 1).widget().value()
+		self.phi = layout.itemAtPosition(2, 1).widget().value()		
+		self.u = layout.itemAtPosition(3, 1).widget().value()				
 		
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Амплитуда')
@@ -216,11 +231,11 @@ class DigitalSignal9(DigitalSignal):
 		return u
 
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.omega = layout.itemAtPosition(1, 1).value()
-		self.phi = layout.itemAtPosition(2, 1).value()		
-		self.u = layout.itemAtPosition(3, 1).value()	
-		self.m = layout.itemAtPosition(4, 1).value()			
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.omega = layout.itemAtPosition(1, 1).widget().value()
+		self.phi = layout.itemAtPosition(2, 1).widget().value()		
+		self.u = layout.itemAtPosition(3, 1).widget().value()	
+		self.m = layout.itemAtPosition(4, 1).widget().value()			
 		
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Амплитуда')
@@ -251,8 +266,8 @@ class DigitalSignal10(DigitalSignal):
 		return u
 	
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.b = layout.itemAtPosition(1, 1).value()	
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.b = layout.itemAtPosition(1, 1).widget().value()	
 
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'a')
@@ -271,8 +286,8 @@ class DigitalSignal11(DigitalSignal):
 		return u
 
 	def getDataFromLayout(self, layout):
-		self.a = layout.itemAtPosition(0, 1).value()	
-		self.sigma_2 = layout.itemAtPosition(1, 1).value()	
+		self.a = layout.itemAtPosition(0, 1).widget().value()	
+		self.sigma_2 = layout.itemAtPosition(1, 1).widget().value()	
 
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'a')
@@ -300,13 +315,13 @@ class DigitalSignal12(DigitalSignal):
 		return y
 
 	def getDataFromLayout(self, layout):
-		p = layout.itemAtPosition(0, 0).value()
-		a = layout.itemAtPosition(0, 3)
-		self.a = [int(a.item(i, 0).text()) for i in range(p)]
-		q = layout.itemAtPosition(1, 0).value()
-		b = layout.itemAtPosition(1, 3)
-		self.a = [int(b.item(i, 0).text()) for i in range(q)]
-		self.sigma_2 = layout.itemAtPosition(2, 1).value()	
+		p = layout.itemAtPosition(0, 0).widget().value()
+		a = layout.itemAtPosition(0, 3).widget()
+		self.a = [int(a.item(i, 0).widget().text()) for i in range(p)]
+		q = layout.itemAtPosition(1, 0).widget().value()
+		b = layout.itemAtPosition(1, 3).widget()
+		self.a = [int(b.item(i, 0).widget().text()) for i in range(q)]
+		self.sigma_2 = layout.itemAtPosition(2, 1).widget().value()	
 
 	def fillLayout(self, layout):
 		self.layout = layout
@@ -342,8 +357,8 @@ class DigitalSignal12(DigitalSignal):
 		return layout		
 
 	def changed(self):
-		self.layout.itemAtPosition(0, 3).setRawCount(self.layout.itemAtPosition(0, 0).value())
-		self.layout.itemAtPosition(1, 3).setRawCount(self.layout.itemAtPosition(1, 0).value())
+		self.layout.itemAtPosition(0, 3).widget().setRawCount(self.layout.itemAtPosition(0, 0).widget().value())
+		self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
 
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
@@ -386,10 +401,8 @@ class Lab4(Labs_):
 		self.expNum = QtGui.QSpinBox(self)
 		self.solLayout.addWidget(self.expNum, 2, 1)
 		self.expNum.setRange(1, 1000000000)
-		self.expNum.setValue(100000)
-		
-		self.gen = [[label, self.expNum]]
-		
+		self.expNum.setValue(100)
+
 		label = QtGui.QLabel(u'Не сохранять в файл')
 		self.solLayout.addWidget(label, 3, 0)
 		self.dontSave = QtGui.QCheckBox(self)
@@ -400,7 +413,6 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(self.generateBtn, 4, 0)
 		self.isGeneratedLabel = QtGui.QLabel(u'Сигнал не сгенерирован')
 		self.solLayout.addWidget(self.isGeneratedLabel, 4, 1)
-		self.gen[0].extend([label, self.dontSave, self.generateBtn, self.isGeneratedLabel])	
 		self.dontSave.setChecked(True)
 
 		self.calc = QtGui.QPushButton(self)
@@ -457,17 +469,6 @@ class Lab4(Labs_):
 		statDialog = ResultsDialog(self, self.parameters, self.results)
 		statDialog.open()
 
-	def parametersGot(self, parameters):
-		self.parameters = parameters
-		self.frstVar.clear()
-		self.scndVar.clear()
-		for i in range (self.parameters.dimension):
-			self.frstVar.addItem(str(i + 1))
-			self.scndVar.addItem(str(i + 1))
-		self.frstVar.setCurrentIndex(0)
-		self.scndVar.setCurrentIndex(1)
-		self.changeControlsVisibility()
-		
 	def selectFilePressed(self):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
 		if os.path.isfile(fname):
@@ -516,19 +517,15 @@ class Lab4(Labs_):
 		self.parent.changeState('')
 			
 	def startGenerate(self):
-		N = self.expNum.value()
-		self.isGenerated = False
 		self.changeControlsVisibility()
-		self.sample = np.random.multivariate_normal(self.parameters.expectations, 
-				self.parameters.covariation, N)
-		if not self.dontSave.isChecked():
-			f = open('result.txt', 'w')
-			f.write('%s %s\n' %  (self.expNum.value(), self.parameters.dimension))
-			for i in range(self.expNum.value()):
-				for j in range(self.parameters.dimension):
-					f.write('%s ' %  self.sample[i][j])
-				f.write('\n');
-			f.close()
+		N = self.expNum.value()
+		index = self.signalsCombobox.currentIndex() 
+		signal = globals()['DigitalSignal{0}'.format(index + 1)](N)
+		signal.getDataFromLayout(self.signalLayouts[index])
+		u = signal.generate()
+		self.sc1.clear()
+		self.sc1.vlines(range(N), [0 for i in range(N)], u)
+		#self.sc1.draw_();
 		self.generatedSignal.emit()		
 		
 	def countStatParams(self):
@@ -601,25 +598,21 @@ class Lab4(Labs_):
 	def generate(self):
 		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
 		self.results = None
-		self.sample = []
 		self.parent.changeState(u'Выполняется...')
-		thread = labThread3(self, self.startGenerate)
+		thread = labThread4(self, self.startGenerate)
 		thread.start()
 
 	def changeControlsVisibility(self):
 		i = self.source.currentIndex()
-		for item in self.gen[0]:
-			item.setVisible(not i)
 		self.selectFile.setVisible(i)
-		self.generateBtn.setDisabled(self.parameters is None)
 		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
 		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
 		self.analyzeCnt = 0;
 		self.parent.changeState(u'Анализируется...')
-		thread1 = labThread3(self, self.startAnalyze)
+		thread1 = labThread4(self, self.startAnalyze)
 		thread1.start()
-		thread2 = labThread3(self, self.countStatParams)
+		thread2 = labThread4(self, self.countStatParams)
 		thread2.start()
 
