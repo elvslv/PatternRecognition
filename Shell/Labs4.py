@@ -13,6 +13,7 @@ from matplotlib import mlab
 import pylab
 import numpy as np
 import numpy.linalg as linalg
+#from scipy import interpolate
 
 class labThread4(Thread):
 	def __init__ (self, parent, run):
@@ -445,6 +446,15 @@ class Lab4(Labs_):
 		self.signalsCombobox = QtGui.QComboBox(self)
 		self.signalsCombobox.currentIndexChanged.connect(self.signalsComboboxChanged)
 		self.solLayout.addWidget(self.signalsCombobox, 7, 0)
+
+
+		label = QtGui.QLabel(u'graph type')
+		self.solLayout.addWidget(label, 8, 0)
+		self.graphType = QtGui.QComboBox(self)
+		self.graphType.currentIndexChanged.connect(self.graphTypeChanged)
+		self.solLayout.addWidget(self.graphType, 8, 1)
+		self.graphType.addItem(str(0))
+		self.graphType.addItem(str(1))
 		
 		self.signalLayouts = []
 		for i in range(12):
@@ -453,7 +463,7 @@ class Lab4(Labs_):
 			signal = globals()['DigitalSignal{0}'.format(i + 1)](0)
 			layout = signal.fillLayout(layout)
 			self.signalLayouts.append(layout)
-			self.solLayout.addLayout( layout, 8, 0)
+			self.solLayout.addLayout( layout, 9, 0)
 			for j in range(layout.count()):
 				layout.itemAt(j).widget().setVisible(False)
 		self.hideSignalLayouts(0)
@@ -466,6 +476,17 @@ class Lab4(Labs_):
 	
 	def signalsComboboxChanged(self, index):
 		self.hideSignalLayouts(index)
+
+	def draw(self):
+		self.sc1.clear()
+		if (self.graphType.currentIndex() ==0 ):	
+			self.sc1.vlines(range(self.N), [0 for i in range(self.N)], self.u)
+		else:
+			self.sc1.plot(range(self.N), self.u, '-', 'red')
+
+	def graphTypeChanged(self, index):
+		if (self.isGenerated):
+			self.draw()
 
 	def showStat(self):
 		statDialog = ResultsDialog(self, self.parameters, self.results)
@@ -520,13 +541,13 @@ class Lab4(Labs_):
 			
 	def startGenerate(self):
 		self.changeControlsVisibility()
-		N = self.expNum.value()
+		self.N = self.expNum.value()
 		index = self.signalsCombobox.currentIndex() 
-		signal = globals()['DigitalSignal{0}'.format(index + 1)](N)
+		signal = globals()['DigitalSignal{0}'.format(index + 1)](self.N)
 		signal.getDataFromLayout(self.signalLayouts[index])
-		u = signal.generate()
-		self.sc1.clear()
-		self.sc1.vlines(range(N), [0 for i in range(N)], u)
+		self.u = signal.generate()
+		self.isGenerated = True
+		self.draw()
 		#self.sc1.draw_();
 		self.generatedSignal.emit()		
 		
