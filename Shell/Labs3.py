@@ -424,7 +424,7 @@ class Lab3(Labs_):
 
 		r = [[0 for i in range(M)] for j in range(M)]
 		for j in range(M):
-			for l in range(M):
+			for l in range(j, M):
 				sum = 0
 				for i in range(N):
 					sum += (self.sample[i][j] - m[j]) * (self.sample[i][l] - m[l])
@@ -434,7 +434,7 @@ class Lab3(Labs_):
 
 		x_ = self.frstVar.currentIndex()
 		y_ = self.scndVar.currentIndex()
-		N = 1000
+		N = 100
 		x1 = np.linspace(-(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], 
 			(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], N)
 		y1 = np.linspace(-(self.results.covariation[y_][y_] + 7) + self.results.expectations[y_], 
@@ -445,7 +445,6 @@ class Lab3(Labs_):
 			math.sqrt(self.results.covariation[y_][y_]), self.results.expectations[x_],
 			self.results.expectations[y_], self.results.covariation[x_][y_])
 		self.sc1.contour(X, Y, Z, 10, 'yellow')	
-		
 		self.analyzeCnt += 1
 		self.analyzedSignal.emit()	
 		
@@ -464,7 +463,7 @@ class Lab3(Labs_):
 			y = [self.sample[i][y_] for i in range(self.expNum.value())]
 		self.sc1.clear()
 		self.sc1.plot(x, y, '.', 'black')	
-		N = 1000
+		N = 100
 		x1 = np.linspace(-(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], 
 			(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], N)
 		y1 = np.linspace(-(self.parameters.covariation[y_][y_]  + 7)+ self.parameters.expectations[y_], 
