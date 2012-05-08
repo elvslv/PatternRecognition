@@ -5,6 +5,7 @@ from Misc import *
 from Labs import*
 from Labs2 import*
 from Labs3 import *
+from Labs4 import *
 
 from PyQt4 import QtGui, QtCore
 
@@ -17,7 +18,7 @@ class MainApplication(QtGui.QApplication):
 		self.mainWindow.showNormal()
 		try:
 			super(MainApplication, self).exec_()
-		except Exception, e:
+		except Exception as e:
 			showMessage(e)
 
 app = MainApplication(sys.argv)
@@ -56,8 +57,8 @@ class MainWindow(QtGui.QMainWindow):
 				self.ui.tabWidget.setCurrentIndex(i)
 				return
 
-		lab = globals()["Lab%s" % num](self);
-		self.ui.tabWidget.addTab(lab, u'Лабораторная работа №%s' % num)
+		lab = globals()["Lab%s" % num](self)
+		self.ui.tabWidget.addTab(lab, u'Лабораторная работа №{0}'.format(num))
 		self.ui.tabWidget.setCurrentIndex(self.ui.tabWidget.count() - 1)
 
 	@QtCore.pyqtSlot(int)

@@ -16,7 +16,7 @@ import numpy as np
 import numpy.linalg as linalg
 
 class MyMplCanvas(FigureCanvas):
-	def __init__(self, parent=None, width=5, height=4, dpi=100):
+	def __init__(self, parent=None, width=5, height=5, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
 # We want the axes cleared every time plot() is called
