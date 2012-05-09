@@ -47,9 +47,9 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 
 	def clear(self):
-		self.axes.hold(False)
+		#self.axes.hold(False)
 		self.axes.plot([], [])
-		self.axes.hold(True)
+		#self.axes.hold(True)
 	
 	def draw_(self):
 		self.draw()

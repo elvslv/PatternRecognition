@@ -26,7 +26,8 @@ class MyMplCanvas(FigureCanvas):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
 		self.axes.set_autoscale_on(True)
-		#self.axes.hold(False)
+		self.axes.margins(0.1, 0)
+		self.axes.hold(False)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
@@ -41,23 +42,26 @@ class MyStaticMplCanvas(MyMplCanvas):
 			self.axes.plot(x, y, ch, zorder = 0, color = col)
 		else:
 			self.axes.plot(x, y, zorder = 0, color = col)
-		#self.draw()
+		self.axes.relim()
+		self.draw()
+		self.axes.margins(0.1, 0)
 		
 	def clear(self):
-		self.axes.hold(False)
-		self.axes.plot([], [])
-		self.axes.hold(True)
-		#self.draw()
+		#self.axes.hold(False)
+		self.axes.cla()
+		#self.axes.hold(True)
+		self.draw()
+		self.axes.margins(0.1, 0)
 		#self.axes.autoscale(enable=True, axis='both', tight=True)
 
 	def draw_(self):
 		self.draw()
 
 	def vlines(self, x, ymin, ymax):
-		print x, ymin, ymax
 		self.axes.vlines(x, ymin, ymax, colors = 'blue')
 		self.axes.relim()
 		self.draw()
+		self.axes.margins(0.1, 0)
 		#self.axes.autoscale(enable=True, axis='both', tight=True)
 
 class DigitalSignal:
@@ -447,6 +451,18 @@ class Lab4(Labs_):
 		self.signalsCombobox.currentIndexChanged.connect(self.signalsComboboxChanged)
 		self.solLayout.addWidget(self.signalsCombobox, 7, 0)
 
+		self.signalLayouts = []
+		for i in range(12):
+			layout = QtGui.QGridLayout(self)
+			signal = globals()['DigitalSignal{0}'.format(i + 1)](0)
+			layout = signal.fillLayout(layout)
+			self.signalLayouts.append(layout)
+			self.solLayout.addLayout( layout, 9, 0)
+			for j in range(layout.count()):
+				layout.itemAt(j).widget().setVisible(False)
+
+		for i in range(12):
+			self.signalsCombobox.addItem(str(i + 1))
 
 		label = QtGui.QLabel(u'graph type')
 		self.solLayout.addWidget(label, 8, 0)
@@ -456,19 +472,10 @@ class Lab4(Labs_):
 		self.graphType.addItem(str(0))
 		self.graphType.addItem(str(1))
 		
-		self.signalLayouts = []
-		for i in range(12):
-			self.signalsCombobox.addItem(str(i + 1))
-			layout = QtGui.QGridLayout(self)
-			signal = globals()['DigitalSignal{0}'.format(i + 1)](0)
-			layout = signal.fillLayout(layout)
-			self.signalLayouts.append(layout)
-			self.solLayout.addLayout( layout, 9, 0)
-			for j in range(layout.count()):
-				layout.itemAt(j).widget().setVisible(False)
 		self.hideSignalLayouts(0)
 		
 	def hideSignalLayouts(self, index):
+		self.sc1.clear()
 		for i in range(12):
 			layout = self.signalLayouts[i]
 			for j in range(layout.count()):
@@ -476,15 +483,22 @@ class Lab4(Labs_):
 	
 	def signalsComboboxChanged(self, index):
 		self.hideSignalLayouts(index)
+		self.isGenerated = False	
+		self.parameters = None	
+		self.results = None
+		self.changeControlsVisibility()
+		self.sc1.clear()
+
 
 	def draw(self):
-		self.sc1.clear()
+		#self.sc1.clear()
 		if (self.graphType.currentIndex() ==0 ):	
 			self.sc1.vlines(range(self.N), [0 for i in range(self.N)], self.u)
 		else:
 			self.sc1.plot(range(self.N), self.u, '-', 'red')
 
 	def graphTypeChanged(self, index):
+		self.sc1.clear()
 		if (self.isGenerated):
 			self.draw()
 
@@ -495,7 +509,7 @@ class Lab4(Labs_):
 	def selectFilePressed(self):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
 		if os.path.isfile(fname):
-			self.isGeneratedLabel.setText(u'Загружается выборка...')
+			self.isGeneratedLabel.setText(u'Загружается сигнал...')
 			self.sample = []
 			try:
 				f = open(fname, 'r')
@@ -521,13 +535,13 @@ class Lab4(Labs_):
 				f.close()
 				self.isGenerated = True
 				self.parametersGot(parameters)
-				self.isGeneratedLabel.setText(u'Выборка загружена')			
+				self.isGeneratedLabel.setText(u'Сигнал загружен')			
 			except:
-				self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
+				self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
 				showMessage(u'Ошибка', u'Некорректный формат файла')
 
 	def generated(self):
-		self.isGeneratedLabel.setText(u'Выборка сгенерирована')
+		self.isGeneratedLabel.setText(u'Сигнал загружен')
 		self.isGenerated = True
 		self.changeControlsVisibility()
 		self.parent.changeState('')
@@ -619,7 +633,7 @@ class Lab4(Labs_):
 		self.analyzedSignal.emit()		
 		
 	def generate(self):
-		self.isGeneratedLabel.setText(u'Выборка не сгенерирована')
+		self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
 		self.results = None
 		self.parent.changeState(u'Выполняется...')
 		thread = labThread4(self, self.startGenerate)
