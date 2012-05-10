@@ -588,6 +588,14 @@ class Lab4(Labs_):
 		self.isGenerated = True
 		self.changeControlsVisibility()
 		self.parent.changeState('')
+		if not self.dontSave.isChecked():
+			f = open('DigitalSignal{0}.dat'.format(self.signalsCombobox.currentIndex() + 1), 'w')
+			f.write('1\n')
+			f.write('DigitalSignal{0}\n'.format(self.signalsCombobox.currentIndex() + 1))
+			f.write('1 %s 1\n' % self.N)
+			for u in self.u:
+				f.write('%s\n' % u)
+			f.close()
 
 	def analyzed(self):
 		if self.analyzeCnt < 2:
@@ -605,7 +613,6 @@ class Lab4(Labs_):
 		self.u = signal.generate()
 		self.isGenerated = True
 		self.draw()
-		#self.sc1.draw_();
 		self.generatedSignal.emit()		
 		
 	def countStatParams(self):
