@@ -505,10 +505,14 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(self.graphType, 8, 1)
 		self.graphType.addItem(str(0))
 		self.graphType.addItem(str(1))
-		
+
+		self.resultsLabel = QtGui.QLabel('')
+		self.solLayout.addWidget(self.resultsLabel, 0, 0)
+
 		self.hideSignalLayouts(0)
 
 	def changed(self):
+		self.resultsLabel.setText('')
 		self.isGenerated = False	
 		self.parameters = None	
 		self.results = None
@@ -519,6 +523,7 @@ class Lab4(Labs_):
 		
 	def hideSignalLayouts(self, index):
 		self.sc1.clear()
+		self.resultsLabel.setText('')
 		for i in range(12):
 			layout = self.signalLayouts[i]
 			for j in range(layout.count()):
@@ -598,9 +603,9 @@ class Lab4(Labs_):
 			f.close()
 
 	def analyzed(self):
-		if self.analyzeCnt < 2:
-			return
-		self.sc1.draw_()
+		#if self.analyzeCnt < 2:
+		#	return
+		#self.sc1.draw_()
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 			
@@ -616,41 +621,27 @@ class Lab4(Labs_):
 		self.generatedSignal.emit()		
 		
 	def countStatParams(self):
-		N = len(self.sample)
-		M = self.parameters.dimension
-		m = [0 for i in range(M)]
-		for i in range(M):
-			sum = 0
-			for j in range(N):
-				sum += self.sample[j][i]
-			m[i] = (sum + 0.0) / N
+		m = 0
+		for u in self.u:
+			m += u
+		m = (m  + 0.0)/ self.N
 
-		r = [[0 for i in range(M)] for j in range(M)]
-		for j in range(M):
-			for l in range(M):
-				sum = 0
-				for i in range(N):
-					sum += (self.sample[i][j] - m[j]) * (self.sample[i][l] - m[l])
-				r[j][l] = r[l][j] = (sum + 0.0) / N
-
-		self.results = DistributionParameters(1, M, m, r)
-
-		x_ = self.frstVar.currentIndex()
-		y_ = self.scndVar.currentIndex()
-		N = 1000
-		x1 = np.linspace(-(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], 
-			(self.results.covariation[x_][x_] + 7) + self.results.expectations[x_], N)
-		y1 = np.linspace(-(self.results.covariation[y_][y_] + 7) + self.results.expectations[y_], 
-			(self.results.covariation[y_][y_] + 7) + self.results.expectations[y_], N)
-
-		X, Y = np.meshgrid(x1, y1)
-		Z = mlab.bivariate_normal(X, Y, math.sqrt(self.results.covariation[x_][x_]), 
-			math.sqrt(self.results.covariation[y_][y_]), self.results.expectations[x_],
-			self.results.expectations[y_], self.results.covariation[x_][y_])
-		self.sc1.contour(X, Y, Z, 10, 'yellow')	
-		
-		self.analyzeCnt += 1
-		self.analyzedSignal.emit()	
+		sigma_2 = 0
+		gamma = 0
+		kapa = 0
+		for u in self.u:
+			sigma_2 += math.pow(u - m, 2)
+			gamma += math.pow(u - m, 3)
+			kapa += math.pow(u - m, 4)
+			
+		sigma_2 = sigma_2 / (self.N - 1.0)
+		sigma = math.sqrt(sigma_2)
+		r = sigma / m
+		gamma = gamma / self.N / math.pow(sigma, 3)
+		kapa = kapa / self.N / math.pow(sigma_2, 2) - 3
+		self.resultsLabel.setText('m = %s,\n sigma_2 = %s,\n sigma = %s,\n r = %s,\n gamma = %s,\n kapa = %s' % (
+			m, sigma_2, sigma, r, gamma, kapa))
+		#self.analyzedSignal.emit()	
 		
 	def startAnalyze(self):
 		x_ = self.frstVar.currentIndex()
@@ -692,14 +683,15 @@ class Lab4(Labs_):
 	def changeControlsVisibility(self):
 		#i = self.source.currentIndex()
 		#self.selectFile.setVisible(i)
-		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
+		self.calc.setDisabled(not self.isGenerated)
 		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
 		self.analyzeCnt = 0;
 		self.parent.changeState(u'Анализируется...')
-		thread1 = labThread4(self, self.startAnalyze)
-		thread1.start()
+		#thread1 = labThread4(self, self.startAnalyze)
+		#thread1.start()
+		self.resultsLabel.setText('')
 		thread2 = labThread4(self, self.countStatParams)
 		thread2.start()
 
