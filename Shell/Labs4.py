@@ -65,8 +65,9 @@ class MyStaticMplCanvas(MyMplCanvas):
 		#self.axes.autoscale(enable=True, axis='both', tight=True)
 
 class DigitalSignal:
-	def __init__(self, N):
-		self.N = N;
+	def __init__(self, N, parent):
+		self.N = N
+		self.parent = parent
 
 class DigitalSignal1(DigitalSignal):
 	def getDataFromLayout(self, layout):
@@ -80,6 +81,7 @@ class DigitalSignal1(DigitalSignal):
 		label = QtGui.QLabel(u'Задержка')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 
@@ -95,6 +97,7 @@ class DigitalSignal2(DigitalSignal):
 		label = QtGui.QLabel(u'Задержка')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 
@@ -110,6 +113,7 @@ class DigitalSignal3(DigitalSignal):
 		label = QtGui.QLabel(u'Основание')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		spinBox.setRange(0.0000000001, 0.9999999999)
 		layout.addWidget(spinBox, 0, 1)
 		return layout		
@@ -121,21 +125,24 @@ class DigitalSignal4(DigitalSignal):
 		self.phi = layout.itemAtPosition(2, 1).widget().value()		
 		
 	def generate(self):
-		u = [self.a * math.sin(i * omega + phi) for i in range(self.N)]
+		u = [self.a * math.sin(i * self.omega + self.phi) for i in range(self.N)]
 		return u
 
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Амплитуда')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 2, 1)
 		return layout				
 		
@@ -144,14 +151,15 @@ class DigitalSignal5(DigitalSignal):
 		self.L = layout.itemAtPosition(0, 1).widget().value()		
 	
 	def generate(self):
-		u = [1 if i % L < L / 2.0 else -1  for i in range(self.N)]
+		u = [1 if i % self.L < self.L / 2.0 else -1  for i in range(self.N)]
 		return u
 
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Период')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
-		spinBox.setMinimum(0)
+		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setMinimum(1)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 		
@@ -161,20 +169,21 @@ class DigitalSignal6(DigitalSignal):
 		self.L = layout.itemAtPosition(0, 1).widget().value()		
 		
 	def generate(self):
-		u = [(i % L) / (L + 0.0)  for i in range(self.N)]
+		u = [(i % self.L) / (self.L + 0.0)  for i in range(self.N)]
 		return u
 		
 	def fillLayout(self, layout):
 		label = QtGui.QLabel(u'Период')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
-		spinBox.setMinimum(0)
+		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setMinimum(1)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 
 class DigitalSignal7(DigitalSignal):
 	def generate(self):
-		u = [a * math.exp(-i / (self.tau + 0.0)) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
+		u = [self.a * math.exp(-i / (self.tau + 0.0)) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
 		return u
 
 	def getDataFromLayout(self, layout):
@@ -187,24 +196,29 @@ class DigitalSignal7(DigitalSignal):
 		label = QtGui.QLabel(u'Амплитуда')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Параметр ширины огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setMinimum(0.01)
 		layout.addWidget(spinBox, 3, 1)
 		return layout				
 		
 class DigitalSignal8(DigitalSignal):
 	def generate(self):
-		u = [a * math.cos(self.u * i) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
+		u = [self.a * math.cos(self.u * i) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
 		return u
 
 	def getDataFromLayout(self, layout):
@@ -217,24 +231,28 @@ class DigitalSignal8(DigitalSignal):
 		label = QtGui.QLabel(u'Амплитуда')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Частота огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 3, 1)
 		return layout			
 		
 class DigitalSignal9(DigitalSignal):
 	def generate(self):
-		u = [a * (1 + self.m * math.cos(self.u * i)) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
+		u = [self.a * (1 + self.m * math.cos(self.u * i)) * math.cos(self.omega * i + self.phi) for i in range(self.N)]
 		return u
 
 	def getDataFromLayout(self, layout):
@@ -248,22 +266,27 @@ class DigitalSignal9(DigitalSignal):
 		label = QtGui.QLabel(u'Амплитуда')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Частота огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 3, 1)
 		label = QtGui.QLabel(u'Индекс глубины модуляции')
 		layout.addWidget(label, 4, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 4, 1)
 		return layout					
 		
@@ -280,10 +303,12 @@ class DigitalSignal10(DigitalSignal):
 		label = QtGui.QLabel(u'a')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'b')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		return layout		
 		
@@ -300,10 +325,12 @@ class DigitalSignal11(DigitalSignal):
 		label = QtGui.QLabel(u'a')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'sigma^2')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		return layout				
 		
@@ -340,7 +367,8 @@ class DigitalSignal12(DigitalSignal):
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'a')
 		layout.addWidget(label, 0, 2)
-		spinBox = QtGui.QTableWidget ()
+		spinBox = QtGui.QTableWidget()
+		spinBox.itemChanged.connect(self.parent.changed)
 		spinBox.setColumnCount(1)
 		spinBox.setRowCount(0)
 		layout.addWidget(spinBox, 0, 3)
@@ -353,19 +381,24 @@ class DigitalSignal12(DigitalSignal):
 		label = QtGui.QLabel(u'b')
 		layout.addWidget(label, 1, 2)
 		spinBox = QtGui.QTableWidget ()
+		spinBox.itemChanged.connect(self.parent.changed)
 		spinBox.setColumnCount(1)
 		spinBox.setRowCount(0)
 		layout.addWidget(spinBox, 1, 3)
 		label = QtGui.QLabel(u'sigma^2')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
+		spinBox.valueChanged.connect(self.parent.changed)
 		spinBox.setMinimum(0)
 		layout.addWidget(spinBox, 2, 1)
 		return layout		
 
-	def changed(self):
+	def changed(self, i):
+		print 111
+		print self.layout.itemAtPosition(0, 0).widget().value()
 		self.layout.itemAtPosition(0, 3).widget().setRawCount(self.layout.itemAtPosition(0, 0).widget().value())
 		self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
+		self.parent.changed()
 
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
@@ -391,17 +424,17 @@ class Lab4(Labs_):
 		layout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
 		layout.addLayout(self.solLayout)
 		
-		label = QtGui.QLabel(u'Источник выборки')
-		self.solLayout.addWidget(label, 0, 0)
-		self.source = QtGui.QComboBox(self)
-		self.solLayout.addWidget(self.source, 0, 1)
-		self.source.addItems([u'Сгенерировать', u'Загрузить из файла'])
-		self.source.currentIndexChanged.connect(self.changeControlsVisibility)
+		#label = QtGui.QLabel(u'Источник выборки')
+		#self.solLayout.addWidget(label, 0, 0)
+		#self.source = QtGui.QComboBox(self)
+		#self.solLayout.addWidget(self.source, 0, 1)
+		#self.source.addItems([u'Сгенерировать', u'Загрузить из файла'])
+		#self.source.currentIndexChanged.connect(self.changeControlsVisibility)
 		
-		self.selectFile = QtGui.QPushButton(self)
-		self.selectFile.setText(u'Выбрать файл')
-		self.solLayout.addWidget(self.selectFile, 1, 0)
-		self.selectFile.clicked.connect(self.selectFilePressed)
+		#self.selectFile = QtGui.QPushButton(self)
+		#self.selectFile.setText(u'Выбрать файл')
+		#self.solLayout.addWidget(self.selectFile, 1, 0)
+		#self.selectFile.clicked.connect(self.selectFilePressed)
 		
 		label = QtGui.QLabel(u'Количество отсчетов')
 		self.solLayout.addWidget(label, 2, 0)
@@ -409,7 +442,8 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(self.expNum, 2, 1)
 		self.expNum.setRange(1, 1000000000)
 		self.expNum.setValue(100)
-
+		self.expNum.valueChanged.connect(self.changed)
+		
 		label = QtGui.QLabel(u'Не сохранять в файл')
 		self.solLayout.addWidget(label, 3, 0)
 		self.dontSave = QtGui.QCheckBox(self)
@@ -454,7 +488,7 @@ class Lab4(Labs_):
 		self.signalLayouts = []
 		for i in range(12):
 			layout = QtGui.QGridLayout(self)
-			signal = globals()['DigitalSignal{0}'.format(i + 1)](0)
+			signal = globals()['DigitalSignal{0}'.format(i + 1)](0, self)
 			layout = signal.fillLayout(layout)
 			self.signalLayouts.append(layout)
 			self.solLayout.addLayout( layout, 9, 0)
@@ -473,6 +507,15 @@ class Lab4(Labs_):
 		self.graphType.addItem(str(1))
 		
 		self.hideSignalLayouts(0)
+
+	def changed(self):
+		self.isGenerated = False	
+		self.parameters = None	
+		self.results = None
+		self.changeControlsVisibility()
+		self.sc1.clear()
+		self.isGeneratedLabel = QtGui.QLabel(u'Сигнал не сгенерирован')
+
 		
 	def hideSignalLayouts(self, index):
 		self.sc1.clear()
@@ -557,7 +600,7 @@ class Lab4(Labs_):
 		self.changeControlsVisibility()
 		self.N = self.expNum.value()
 		index = self.signalsCombobox.currentIndex() 
-		signal = globals()['DigitalSignal{0}'.format(index + 1)](self.N)
+		signal = globals()['DigitalSignal{0}'.format(index + 1)](self.N, self)
 		signal.getDataFromLayout(self.signalLayouts[index])
 		self.u = signal.generate()
 		self.isGenerated = True
@@ -640,8 +683,8 @@ class Lab4(Labs_):
 		thread.start()
 
 	def changeControlsVisibility(self):
-		i = self.source.currentIndex()
-		self.selectFile.setVisible(i)
+		#i = self.source.currentIndex()
+		#self.selectFile.setVisible(i)
 		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
 		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
