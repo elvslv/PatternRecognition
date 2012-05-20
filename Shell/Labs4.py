@@ -26,8 +26,8 @@ class MyMplCanvas(FigureCanvas):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
 		self.axes = self.fig.add_subplot(111)
 		self.axes.set_autoscale_on(True)
-		self.axes.margins(0.1, 0)
 		self.axes.hold(False)
+		self.axes.margins(0.1, 0)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
@@ -400,6 +400,31 @@ class DigitalSignal12(DigitalSignal):
 		self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
 		self.parent.changed()
 
+def DFT(x):
+	N = len(x)
+	X = []
+	for k in range(N):
+		X.append(0)
+		for n in range(N):
+			X[k] += x[n] * (np.cos(-2 * math.pi / N * k * n) + np.sin(-2 * math.pi / N * k * n) * 1j)
+	return X
+
+def IDFT(X):
+	N = len(X)
+	x = []
+	for n in range(N):
+		x.append(0)
+		for k in range(N):
+			x[n] += X[k] * (np.cos(2 * math.pi / N * k * n) + np.sin(2 * math.pi / N * k * n) * 1j)
+		x[n] = x[n] / N
+	return x
+
+def TotalDFT(x, ind):
+	return DFT(x) if x == 0 else IDFT(x)
+
+def FFT(x):
+	return np.fft.fft(x)
+
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
 	analyzedSignal = QtCore.pyqtSignal()
@@ -412,18 +437,31 @@ class Lab4(Labs_):
 		self.setLayout(self.verticalLayout)
 		
 		self.sc1 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc2 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc3 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc4 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+
+		self.sc2.axes.hold(True)
+		self.sc3.axes.hold(True)
 		
 		tabWidget = QtGui.QTabWidget(self)
 		self.verticalLayout.addWidget(tabWidget)
 		tabWidget.addTab(self.sc1, u'Сигнал')
-		
+		tabWidget.addTab(self.sc2, u'Амплитудный и фазовый спектры')
+		tabWidget.addTab(self.sc3, u'Амплитудный спектр')
+		tabWidget.addTab(self.sc4, u'Фазовый спектр')
+
+		self.resultsLabel = QtGui.QLabel('')
+
 		layout = QtGui.QVBoxLayout(self)
 		self.verticalLayout.addLayout(layout)
 		
 		self.solLayout = QtGui.QGridLayout(self)
 		layout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
 		layout.addLayout(self.solLayout)
-		
+
+		self.solLayout.addWidget(self.resultsLabel, 0, 0)
+
 		#label = QtGui.QLabel(u'Источник выборки')
 		#self.solLayout.addWidget(label, 0, 0)
 		#self.source = QtGui.QComboBox(self)
@@ -476,6 +514,11 @@ class Lab4(Labs_):
 		self.showResults.clicked.connect(self.showStat)
 		self.solLayout.addWidget(self.showResults, 6, 0)	
 			
+		self.doDFT = QtGui.QPushButton(self)
+		self.doDFT.setText(u'Дискретное преобразование Фурье')
+		self.doDFT.clicked.connect(self.DFT)
+		self.solLayout.addWidget(self.doDFT, 7, 0)		
+			
 		self.isGenerated = False	
 		self.parameters = None	
 		self.results = None
@@ -483,7 +526,7 @@ class Lab4(Labs_):
 
 		self.signalsCombobox = QtGui.QComboBox(self)
 		self.signalsCombobox.currentIndexChanged.connect(self.signalsComboboxChanged)
-		self.solLayout.addWidget(self.signalsCombobox, 7, 0)
+		self.solLayout.addWidget(self.signalsCombobox, 8, 0)
 
 		self.signalLayouts = []
 		for i in range(12):
@@ -491,7 +534,7 @@ class Lab4(Labs_):
 			signal = globals()['DigitalSignal{0}'.format(i + 1)](0, self)
 			layout = signal.fillLayout(layout)
 			self.signalLayouts.append(layout)
-			self.solLayout.addLayout( layout, 9, 0)
+			self.solLayout.addLayout( layout, 10, 0)
 			for j in range(layout.count()):
 				layout.itemAt(j).widget().setVisible(False)
 
@@ -499,15 +542,12 @@ class Lab4(Labs_):
 			self.signalsCombobox.addItem(str(i + 1))
 
 		label = QtGui.QLabel(u'graph type')
-		self.solLayout.addWidget(label, 8, 0)
+		self.solLayout.addWidget(label, 9, 0)
 		self.graphType = QtGui.QComboBox(self)
 		self.graphType.currentIndexChanged.connect(self.graphTypeChanged)
-		self.solLayout.addWidget(self.graphType, 8, 1)
+		self.solLayout.addWidget(self.graphType, 9, 1)
 		self.graphType.addItem(str(0))
 		self.graphType.addItem(str(1))
-
-		self.resultsLabel = QtGui.QLabel('')
-		self.solLayout.addWidget(self.resultsLabel, 0, 0)
 
 		self.hideSignalLayouts(0)
 
@@ -519,7 +559,6 @@ class Lab4(Labs_):
 		self.changeControlsVisibility()
 		self.sc1.clear()
 		self.isGeneratedLabel = QtGui.QLabel(u'Сигнал не сгенерирован')
-
 		
 	def hideSignalLayouts(self, index):
 		self.sc1.clear()
@@ -537,9 +576,7 @@ class Lab4(Labs_):
 		self.changeControlsVisibility()
 		self.sc1.clear()
 
-
 	def draw(self):
-		#self.sc1.clear()
 		if (self.graphType.currentIndex() ==0 ):	
 			self.sc1.vlines(range(self.N), [0 for i in range(self.N)], self.u)
 		else:
@@ -603,9 +640,6 @@ class Lab4(Labs_):
 			f.close()
 
 	def analyzed(self):
-		#if self.analyzeCnt < 2:
-		#	return
-		#self.sc1.draw_()
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 			
@@ -641,7 +675,6 @@ class Lab4(Labs_):
 		kapa = kapa / self.N / math.pow(sigma_2, 2) - 3
 		self.resultsLabel.setText('m = %s,\n sigma_2 = %s,\n sigma = %s,\n r = %s,\n gamma = %s,\n kapa = %s' % (
 			m, sigma_2, sigma, r, gamma, kapa))
-		#self.analyzedSignal.emit()	
 		
 	def startAnalyze(self):
 		x_ = self.frstVar.currentIndex()
@@ -681,17 +714,40 @@ class Lab4(Labs_):
 		thread.start()
 
 	def changeControlsVisibility(self):
-		#i = self.source.currentIndex()
-		#self.selectFile.setVisible(i)
 		self.calc.setDisabled(not self.isGenerated)
+		self.doDFT.setDisabled(not self.isGenerated)
 		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
 		self.analyzeCnt = 0;
 		self.parent.changeState(u'Анализируется...')
-		#thread1 = labThread4(self, self.startAnalyze)
-		#thread1.start()
 		self.resultsLabel.setText('')
 		thread2 = labThread4(self, self.countStatParams)
 		thread2.start()
+
+	def DFT(self):
+		if not self.isGenerated:
+			return
+		self.dft = DFT(self.u)
+		r = []
+		i = []
+		a = []
+		for d in self.dft:
+			r.append(d.real)
+			i.append(d.imag)
+			a.append(np.arctan(d.imag / d.real))
+		self.sc2.clear()
+		self.sc2.axes.plot(range(self.N), r, '-', color = 'red')
+		self.sc2.axes.plot(range(self.N), i, '-', color = 'blue')
+		self.sc2.axes.plot(range(self.N), a, '-', color = 'green')
+		self.sc2.draw()
+
+		self.sc3.clear()
+		self.sc3.axes.plot(range(self.N), r, '-', color = 'red')
+		self.sc3.axes.plot(range(self.N), i, '-', color = 'blue')
+		self.sc3.draw()
+
+		self.sc4.clear()
+		self.sc4.axes.plot(range(self.N), a, '-', color = 'green')
+		self.sc4.draw()
 
