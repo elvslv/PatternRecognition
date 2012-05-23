@@ -425,6 +425,53 @@ def TotalDFT(x, ind):
 def FFT(x):
 	return np.fft.fft(x)
 
+def x_corr(x, ind):
+	N = len(x)
+	K = []
+	sum = 0
+	
+	for i in range(N):
+		sum += x[i]
+	sum /= (N + 0.0)
+	
+	if ind == 0:
+		for m in range(N):
+			K.append(0)
+			for n in range(N - m):
+				K[m] += (x[n] - sum) * (x[n + m] - sum)
+			K[m] /= (N + 0.0)
+	else:
+		L = math.ceil(math.log(N, 2))
+		for i in range(N, L):
+			x.append(sum)
+		P = FFT(x)
+		for m in range(N):
+			K.append(0)
+			for k in range(L):
+				K[m] += P[k] * (np.sin(2 * math.pi / L * m * k) * 1j)
+	return K
+
+def x_SPM(x, L):
+	P1 = FFT(x)
+	P = []
+	for k in range(L + 1):
+		P.append(0)
+		for l in range(-L, L + 1):
+			P[k] += P1[k + l]
+		P[k] /= (2 * L + 1.0)
+	return P
+	
+def xy_corr(x, y, ind):
+	K = []
+	for m in range(N):
+		K.append(0)
+		for n in range(N - m - 1):
+			K[m] += (x[n] - sum1) * (y(n + m) - sum2)
+		K[m] /= (N + 0.0)
+
+	return K
+	
+
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
 	analyzedSignal = QtCore.pyqtSignal()
