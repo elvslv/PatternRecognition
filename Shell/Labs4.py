@@ -441,7 +441,7 @@ def x_corr(x, ind):
 				K[m] += (x[n] - sum) * (x[n + m] - sum)
 			K[m] /= (N + 0.0)
 	else:
-		L = math.ceil(math.log(N, 2))
+		L = math.pow(2, math.ceil(math.log(2 * N, 2)))
 		for i in range(N, L):
 			x.append(sum)
 		P = FFT(x)
@@ -463,14 +463,92 @@ def x_SPM(x, L):
 	
 def xy_corr(x, y, ind):
 	K = []
-	for m in range(N):
-		K.append(0)
-		for n in range(N - m - 1):
-			K[m] += (x[n] - sum1) * (y(n + m) - sum2)
-		K[m] /= (N + 0.0)
-
+	sum1 = 0
+	sum2 = 0
+	N1 = len(x)
+	N2 = len(y)
+	for i in range(N1):
+		sum1 += x[i]
+	sum1 /= N1
+	for i in range(N2):
+		sum2 += y[i]
+	sum2 /= N2
+	N = max(N1, N2)
+	if ind == 0:
+		for i in range(N1, N):
+			x.append(sum1)
+		for i in range(N2, N):
+			y.append(sum2)
+		for m in range(N):
+			K.append(0)
+			for n in range(N - m - 1):
+				K[m] += (x[n] - sum1) * (y(n + m) - sum2)
+			K[m] /= (N + 0.0)
+	else:
+		for i in range(N1):
+			x[i] -= sum1
+		for i in range(N2):
+			y[i] -= sum2
+		N = math.pow(2, math.ceil(math.log(2 * N, 2)))
+		for i in range(N1, N):
+			x.append(0)
+		for i in range(N2, N):
+			y.append(0)
+		X = FFT(x)
+		Y = FFT(y)
+		Z = []
+		for i in range(N):
+			Z[i] = X[i] * (Y[i].real - Y[i].imag * 1j) #Y*
+		z = np.fft.ifft(x)
+		K = lambda m: return (math.abs(z[m]) if m >= 0 else z[N - math.abs(m)])
 	return K
 	
+def xy_SPM(x, y, L):
+	sum1 = 0
+	sum2 = 0
+	N1 = len(x)
+	N2 = len(y)
+	for i in range(N1):
+		sum1 += x[i]
+	sum1 /= N1
+	for i in range(N2):
+		sum2 += y[i]
+	sum2 /= N2
+	N = math.pow(2, math.ceil(math.log(2 * max(N1, N2), 2)))
+	for i in range(N1, N):
+		x.append(sum1)
+	for i in range(N2, N):
+		y.append(sum2)
+	X = FFT(x)
+	Y = FFT(y)
+	G = []
+	for k in range(N):
+		G.append((X[k].real - X[k].imag * 1j) * Y[k])
+	G1 = []
+	for k in range(N):
+		G1.append(0)
+		for l in range(-L, L + 1):
+			G1[k] += G[(k + L) % N]
+		G1[k] /= 2 * L + 1
+	return G1
+
+def xy_SPM_to_Real(P, ind, Gx, Gy):
+	res = []
+	for i in range(len(P)):
+		if ind == 1:
+			res.append(P[i].real)
+		elif ind == 2:
+			res.append(P[i].imag):
+		elif ind == 3:
+			res.append(math.sqrt(P[i].real * P[i].real + P[i].imag * P[i].imag))
+		elif ind == 4:
+			res.append(math.arctan(math.abs((P[i].imag + 0.0) / P[i].real)))
+		elif ind == 5:
+			res.append((P[i].real * P[i].real + P[i].imag * P[i].imag) / (Gx[k] * Gy[k]))
+		elif ind == 6:
+			res.append(math.sqrt(P[i].real * P[i].real + P[i].imag * P[i].imag) / Gx[k])
+	return res
+
 
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
