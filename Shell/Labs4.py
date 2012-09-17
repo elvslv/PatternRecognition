@@ -14,6 +14,10 @@ import pylab
 import numpy as np
 import numpy.linalg as linalg
 #from scipy import interpolate
+from matplotlib import rcParams
+rcParams['text.usetex']=False
+rcParams['font.sans-serif'] = ['Times New Roman']
+rcParams['font.serif'] = ['Times New Roman'] 
 
 class labThread4(Thread):
 	def __init__ (self, parent, run):
@@ -63,11 +67,20 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 		self.axes.margins(0.1, 0)
 		#self.axes.autoscale(enable=True, axis='both', tight=True)
+global signal12
+signal12 = None
 
 class DigitalSignal:
 	def __init__(self, N, parent):
 		self.N = N
 		self.parent = parent
+
+	def changed2(self):
+		print 111789
+		#print self.layout.itemAtPosition(0, 0).widget().value()
+		#self.layout.itemAtPosition(0, 3).widget().setRawCount(self.layout.itemAtPosition(0, 0).widget().value())
+		#self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
+		#self.parent.changed()
 
 class DigitalSignal1(DigitalSignal):
 	def getDataFromLayout(self, layout):
@@ -333,7 +346,15 @@ class DigitalSignal11(DigitalSignal):
 		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 1, 1)
 		return layout				
-		
+
+def signal12Changed(i):
+	if not signal12:
+		return
+	print signal12.layout.itemAtPosition(0, 1).widget().value()
+	signal12.layout.itemAtPosition(0, 3).widget().setRowCount(signal12.layout.itemAtPosition(0, 1).widget().value())
+	signal12.layout.itemAtPosition(1, 3).widget().setRowCount(signal12.layout.itemAtPosition(1, 1).widget().value())
+	signal12.parent.changed()
+
 class DigitalSignal12(DigitalSignal):
 	def generate(self):
 		x = [np.random.normal(0, self.sigma_2) for i in range(self.N)]
@@ -363,7 +384,7 @@ class DigitalSignal12(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
 		spinBox.setMinimum(0)
-		spinBox.valueChanged.connect(self.changed)
+		spinBox.valueChanged.connect(signal12Changed)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'a')
 		layout.addWidget(label, 0, 2)
@@ -375,7 +396,7 @@ class DigitalSignal12(DigitalSignal):
 		label = QtGui.QLabel(u'q')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QSpinBox()
-		spinBox.valueChanged.connect(self.changed)
+		spinBox.valueChanged.connect(signal12Changed)
 		spinBox.setMinimum(0)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'b')
@@ -392,13 +413,6 @@ class DigitalSignal12(DigitalSignal):
 		spinBox.setMinimum(0)
 		layout.addWidget(spinBox, 2, 1)
 		return layout		
-
-	def changed(self, i):
-		print 111
-		print self.layout.itemAtPosition(0, 0).widget().value()
-		self.layout.itemAtPosition(0, 3).widget().setRawCount(self.layout.itemAtPosition(0, 0).widget().value())
-		self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
-		self.parent.changed()
 
 def DFT(x):
 	N = len(x)
@@ -500,7 +514,7 @@ def xy_corr(x, y, ind):
 		for i in range(N):
 			Z[i] = X[i] * (Y[i].real - Y[i].imag * 1j) #Y*
 		z = np.fft.ifft(x)
-		K = lambda m: return (math.abs(z[m]) if m >= 0 else z[N - math.abs(m)])
+		K = lambda m:  (math.abs(z[m]) if m >= 0 else z[N - math.abs(m)])
 	return K
 	
 def xy_SPM(x, y, L):
@@ -538,7 +552,7 @@ def xy_SPM_to_Real(P, ind, Gx, Gy):
 		if ind == 1:
 			res.append(P[i].real)
 		elif ind == 2:
-			res.append(P[i].imag):
+			res.append(P[i].imag)
 		elif ind == 3:
 			res.append(math.sqrt(P[i].real * P[i].real + P[i].imag * P[i].imag))
 		elif ind == 4:
@@ -662,6 +676,9 @@ class Lab4(Labs_):
 			self.solLayout.addLayout( layout, 10, 0)
 			for j in range(layout.count()):
 				layout.itemAt(j).widget().setVisible(False)
+			if i == 11:
+				global signal12
+				signal12 = signal
 
 		for i in range(12):
 			self.signalsCombobox.addItem(str(i + 1))
@@ -683,8 +700,8 @@ class Lab4(Labs_):
 		self.results = None
 		self.changeControlsVisibility()
 		self.sc1.clear()
-		self.isGeneratedLabel = QtGui.QLabel(u'Сигнал не сгенерирован')
-		
+		self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
+
 	def hideSignalLayouts(self, index):
 		self.sc1.clear()
 		self.resultsLabel.setText('')
@@ -751,7 +768,8 @@ class Lab4(Labs_):
 				showMessage(u'Ошибка', u'Некорректный формат файла')
 
 	def generated(self):
-		self.isGeneratedLabel.setText(u'Сигнал загружен')
+		print 'generated'
+		self.isGeneratedLabel.setText(u'Сигнал сгенерирован')
 		self.isGenerated = True
 		self.changeControlsVisibility()
 		self.parent.changeState('')
@@ -769,6 +787,7 @@ class Lab4(Labs_):
 		self.parent.changeState('')
 			
 	def startGenerate(self):
+		print 'startGenerate'
 		self.changeControlsVisibility()
 		self.N = self.expNum.value()
 		index = self.signalsCombobox.currentIndex() 
@@ -853,7 +872,8 @@ class Lab4(Labs_):
 	def DFT(self):
 		if not self.isGenerated:
 			return
-		self.dft = DFT(self.u)
+		self.dft = np.fft.fft(self.u)
+		#DFT(self.u)
 		r = []
 		i = []
 		a = []
@@ -862,17 +882,19 @@ class Lab4(Labs_):
 			i.append(d.imag)
 			a.append(np.arctan(d.imag / d.real))
 		self.sc2.clear()
-		self.sc2.axes.plot(range(self.N), r, '-', color = 'red')
-		self.sc2.axes.plot(range(self.N), i, '-', color = 'blue')
-		self.sc2.axes.plot(range(self.N), a, '-', color = 'green')
+		self.sc2.axes.plot(range(self.N), r, '-', label = u"действительная часть")
+		self.sc2.axes.plot(range(self.N), i, '-', label = u'мнимая часть')
+		self.sc2.axes.plot(range(self.N), a, '-', label = u'амплитуда')
+		self.sc2.axes.legend( (u'действительная часть', u'мнимая часть', u'амплитуда') )
 		self.sc2.draw()
 
 		self.sc3.clear()
-		self.sc3.axes.plot(range(self.N), r, '-', color = 'red')
-		self.sc3.axes.plot(range(self.N), i, '-', color = 'blue')
+		self.sc3.axes.plot(range(self.N), r, '-', label = u"действительная часть")
+		self.sc3.axes.plot(range(self.N), i, '-', label = u'мнимая часть')
+		self.sc3.axes.legend( (u'действительная часть', u'мнимая часть') )
 		self.sc3.draw()
 
 		self.sc4.clear()
-		self.sc4.axes.plot(range(self.N), a, '-', color = 'green')
+		self.sc4.axes.plot(range(self.N), a, '-')
 		self.sc4.draw()
 
