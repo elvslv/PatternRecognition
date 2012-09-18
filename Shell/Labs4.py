@@ -31,7 +31,7 @@ class MyMplCanvas(FigureCanvas):
 		self.axes = self.fig.add_subplot(111)
 		self.axes.set_autoscale_on(True)
 		self.axes.hold(False)
-		self.axes.margins(0.1, 0)
+		self.axes.margins(1, 1)
 		FigureCanvas.__init__(self, self.fig)
 		self.setParent(parent)
 
@@ -47,8 +47,8 @@ class MyStaticMplCanvas(MyMplCanvas):
 		else:
 			self.axes.plot(x, y, zorder = 0, color = col)
 		self.axes.relim()
-		self.draw()
 		self.axes.margins(0.1, 0)
+		self.draw()
 		
 	def clear(self):
 		#self.axes.hold(False)
@@ -62,6 +62,7 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 
 	def vlines(self, x, ymin, ymax):
+		print x, len(ymin), len(ymax)
 		self.axes.vlines(x, ymin, ymax, colors = 'blue')
 		self.axes.relim()
 		self.draw()
@@ -76,7 +77,7 @@ class DigitalSignal:
 		self.parent = parent
 
 	def changed2(self):
-		print 111789
+		pass
 		#print self.layout.itemAtPosition(0, 0).widget().value()
 		#self.layout.itemAtPosition(0, 3).widget().setRawCount(self.layout.itemAtPosition(0, 0).widget().value())
 		#self.layout.itemAtPosition(1, 3).widget().setRawCount(self.layout.itemAtPosition(1, 0).widget().value())
@@ -127,6 +128,8 @@ class DigitalSignal3(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
 		spinBox.setRange(0.0000000001, 0.9999999999)
 		layout.addWidget(spinBox, 0, 1)
 		return layout		
@@ -146,16 +149,25 @@ class DigitalSignal4(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
 		layout.addWidget(spinBox, 2, 1)
 		return layout				
 		
@@ -172,7 +184,7 @@ class DigitalSignal5(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
-		spinBox.setMinimum(1)
+		spinBox.setRange(1, 10000000)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 		
@@ -190,7 +202,7 @@ class DigitalSignal6(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
-		spinBox.setMinimum(1)
+		spinBox.setRange(2, 10000000)
 		layout.addWidget(spinBox, 0, 1)
 		return layout
 
@@ -210,22 +222,34 @@ class DigitalSignal7(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Параметр ширины огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
-		spinBox.setMinimum(0.01)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(0.0000000001, 100)
 		layout.addWidget(spinBox, 3, 1)
 		return layout				
 		
@@ -245,21 +269,37 @@ class DigitalSignal8(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)		
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Частота огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 3, 1)
 		return layout			
 		
@@ -280,26 +320,46 @@ class DigitalSignal9(DigitalSignal):
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 0, 1)
 		label = QtGui.QLabel(u'Частота')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 1, 1)
 		label = QtGui.QLabel(u'Начальная фаза')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 2, 1)
 		label = QtGui.QLabel(u'Частота огибающей')
 		layout.addWidget(label, 3, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 3, 1)
 		label = QtGui.QLabel(u'Индекс глубины модуляции')
 		layout.addWidget(label, 4, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setDecimals(10)
+		spinBox.setSingleStep(0.0000000001)
+		spinBox.setRange(-100, 100)
+		spinBox.setValue(0.0000000001)
 		layout.addWidget(spinBox, 4, 1)
 		return layout					
 		
@@ -335,47 +395,61 @@ class DigitalSignal11(DigitalSignal):
 		self.sigma_2 = layout.itemAtPosition(1, 1).widget().value()	
 
 	def fillLayout(self, layout):
-		label = QtGui.QLabel(u'a')
+		label = QtGui.QLabel(u'Среднее')
 		layout.addWidget(label, 0, 0)
 		spinBox = QtGui.QSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
 		layout.addWidget(spinBox, 0, 1)
-		label = QtGui.QLabel(u'sigma^2')
+		label = QtGui.QLabel(u'Среднеквадратичное отклонение')
 		layout.addWidget(label, 1, 0)
 		spinBox = QtGui.QSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
+		spinBox.setValue(1)
 		layout.addWidget(spinBox, 1, 1)
 		return layout				
 
 def signal12Changed(i):
 	if not signal12:
 		return
-	print signal12.layout.itemAtPosition(0, 1).widget().value()
-	signal12.layout.itemAtPosition(0, 3).widget().setRowCount(signal12.layout.itemAtPosition(0, 1).widget().value())
-	signal12.layout.itemAtPosition(1, 3).widget().setRowCount(signal12.layout.itemAtPosition(1, 1).widget().value())
+	p = signal12.layout.itemAtPosition(0, 1).widget().value()
+	q = signal12.layout.itemAtPosition(1, 1).widget().value()
+	a = signal12.layout.itemAtPosition(0, 3).widget()
+	b = signal12.layout.itemAtPosition(1, 3).widget()
+	p1 = a.rowCount()
+	q1 = b.rowCount()
+	a.setRowCount(p)
+	b.setRowCount(q)
+	for i in range(p1, p):
+		item = QtGui.QTableWidgetItem('0.00')
+		a.setItem(i, 0, item)
+	for i in range(q1, q):
+		item = QtGui.QTableWidgetItem('0.00')
+		b.setItem(i, 0, item)		
 	signal12.parent.changed()
 
 class DigitalSignal12(DigitalSignal):
 	def generate(self):
 		x = [np.random.normal(0, self.sigma_2) for i in range(self.N)]
-		y = []
-		for i in range(self.N):
+		y = [x[0]]
+		for n in range(1, self.N):
 			s1 = 0
 			s2 = 0
-			for j in range(min(len(self.a), i)):
-				s1 += self.a[j] * y[i - j];
-			for j in range(min(len(self.b), i)):
-				s2 += self.b[j] * x[i - j];
-			y.append(x[i] + s2 - s1)
+			for i in range(1, min(self.p, n)+1):
+				s1 += self.a[i-1] * y[n - i];
+			for i in range(1, min(self.q, n)+1):
+				s2 += self.b[i-1] * x[n - i];
+			y.append(x[n] + s2 - s1)
 		return y
 
 	def getDataFromLayout(self, layout):
-		p = layout.itemAtPosition(0, 0).widget().value()
+		p = layout.itemAtPosition(0, 1).widget().value()
+		self.p = p
 		a = layout.itemAtPosition(0, 3).widget()
-		self.a = [int(a.item(i, 0).widget().text()) for i in range(p)]
-		q = layout.itemAtPosition(1, 0).widget().value()
+		self.a = [float(a.item(i, 0).text()) for i in range(p)]
+		q = layout.itemAtPosition(1, 1).widget().value()
+		self.q = q
 		b = layout.itemAtPosition(1, 3).widget()
-		self.a = [int(b.item(i, 0).widget().text()) for i in range(q)]
+		self.b = [float(b.item(i, 0).text()) for i in range(q)]
 		self.sigma_2 = layout.itemAtPosition(2, 1).widget().value()	
 
 	def fillLayout(self, layout):
@@ -406,11 +480,12 @@ class DigitalSignal12(DigitalSignal):
 		spinBox.setColumnCount(1)
 		spinBox.setRowCount(0)
 		layout.addWidget(spinBox, 1, 3)
-		label = QtGui.QLabel(u'sigma^2')
+		label = QtGui.QLabel(u'Дисперсия')
 		layout.addWidget(label, 2, 0)
 		spinBox = QtGui.QDoubleSpinBox()
 		spinBox.valueChanged.connect(self.parent.changed)
 		spinBox.setMinimum(0)
+		spinBox.setValue(1)
 		layout.addWidget(spinBox, 2, 1)
 		return layout		
 
@@ -647,16 +722,11 @@ class Lab4(Labs_):
 		#self.scndVar = QtGui.QComboBox(self)
 		#self.scndVar.currentIndexChanged.connect(self.scndVarChanged)
 		#self.solLayout.addWidget(self.scndVar, 6, 1)
-
-		self.showResults = QtGui.QPushButton(self)
-		self.showResults.setText(u'Показать выборочные данные')
-		self.showResults.clicked.connect(self.showStat)
-		self.solLayout.addWidget(self.showResults, 6, 0)	
-			
+	
 		self.doDFT = QtGui.QPushButton(self)
 		self.doDFT.setText(u'Дискретное преобразование Фурье')
 		self.doDFT.clicked.connect(self.DFT)
-		self.solLayout.addWidget(self.doDFT, 7, 0)		
+		self.solLayout.addWidget(self.doDFT, 6, 0)		
 			
 		self.isGenerated = False	
 		self.parameters = None	
@@ -665,7 +735,7 @@ class Lab4(Labs_):
 
 		self.signalsCombobox = QtGui.QComboBox(self)
 		self.signalsCombobox.currentIndexChanged.connect(self.signalsComboboxChanged)
-		self.solLayout.addWidget(self.signalsCombobox, 8, 0)
+		self.solLayout.addWidget(self.signalsCombobox, 7, 0)
 
 		self.signalLayouts = []
 		for i in range(12):
@@ -683,13 +753,13 @@ class Lab4(Labs_):
 		for i in range(12):
 			self.signalsCombobox.addItem(str(i + 1))
 
-		label = QtGui.QLabel(u'graph type')
-		self.solLayout.addWidget(label, 9, 0)
+		label = QtGui.QLabel(u'Режим отображения')
+		self.solLayout.addWidget(label, 8, 0)
 		self.graphType = QtGui.QComboBox(self)
 		self.graphType.currentIndexChanged.connect(self.graphTypeChanged)
-		self.solLayout.addWidget(self.graphType, 9, 1)
-		self.graphType.addItem(str(0))
-		self.graphType.addItem(str(1))
+		self.solLayout.addWidget(self.graphType, 8, 1)
+		self.graphType.addItem(u'Классический')
+		self.graphType.addItem(u'В виде ломаной')
 
 		self.hideSignalLayouts(0)
 
@@ -700,6 +770,9 @@ class Lab4(Labs_):
 		self.results = None
 		self.changeControlsVisibility()
 		self.sc1.clear()
+		self.sc2.clear()
+		self.sc3.clear()
+		self.sc4.clear()
 		self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
 
 	def hideSignalLayouts(self, index):
@@ -717,6 +790,9 @@ class Lab4(Labs_):
 		self.results = None
 		self.changeControlsVisibility()
 		self.sc1.clear()
+		self.sc2.clear()
+		self.sc3.clear()
+		self.sc4.clear()
 
 	def draw(self):
 		if (self.graphType.currentIndex() ==0 ):	
@@ -728,10 +804,6 @@ class Lab4(Labs_):
 		self.sc1.clear()
 		if (self.isGenerated):
 			self.draw()
-
-	def showStat(self):
-		statDialog = ResultsDialog(self, self.parameters, self.results)
-		statDialog.open()
 
 	def selectFilePressed(self):
 		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
@@ -768,7 +840,6 @@ class Lab4(Labs_):
 				showMessage(u'Ошибка', u'Некорректный формат файла')
 
 	def generated(self):
-		print 'generated'
 		self.isGeneratedLabel.setText(u'Сигнал сгенерирован')
 		self.isGenerated = True
 		self.changeControlsVisibility()
@@ -787,7 +858,6 @@ class Lab4(Labs_):
 		self.parent.changeState('')
 			
 	def startGenerate(self):
-		print 'startGenerate'
 		self.changeControlsVisibility()
 		self.N = self.expNum.value()
 		index = self.signalsCombobox.currentIndex() 
@@ -803,7 +873,6 @@ class Lab4(Labs_):
 		for u in self.u:
 			m += u
 		m = (m  + 0.0)/ self.N
-
 		sigma_2 = 0
 		gamma = 0
 		kapa = 0
@@ -814,40 +883,18 @@ class Lab4(Labs_):
 			
 		sigma_2 = sigma_2 / (self.N - 1.0)
 		sigma = math.sqrt(sigma_2)
-		r = sigma / m
-		gamma = gamma / self.N / math.pow(sigma, 3)
-		kapa = kapa / self.N / math.pow(sigma_2, 2) - 3
-		self.resultsLabel.setText('m = %s,\n sigma_2 = %s,\n sigma = %s,\n r = %s,\n gamma = %s,\n kapa = %s' % (
+		try:
+			r = sigma / m
+		except:
+			r = 'inf'
+		try:
+			gamma = gamma / self.N / math.pow(sigma, 3)
+			kapa = kapa / self.N / math.pow(sigma_2, 2) - 3
+		except:
+			gamma = 'inf'
+			kapa = 'inf'
+		self.resultsLabel.setText(u' Среднее: %s,\n Дисперсия: %s,\n Среднеквадратичное отклонение: %s,\n Коэффициент вариации: %s,\n Коээффициента асимметрии: %s,\n Коэффициент эксцесса: %s' % (
 			m, sigma_2, sigma, r, gamma, kapa))
-		
-	def startAnalyze(self):
-		x_ = self.frstVar.currentIndex()
-		y_ = self.scndVar.currentIndex()
-		x = []
-		y = []
-		if self.expNum.value() > 1000000: #10^6 -- maxsize
-			for i in range(self.expNum.value()):
-				if random.randint(0, self.expNum.value() - 1) < 1000000:
-					x.append(self.sample[i][x_])
-					y.append(self.sample[i][y_])
-		else:
-			x = [self.sample[i][x_] for i in range(self.expNum.value())]
-			y = [self.sample[i][y_] for i in range(self.expNum.value())]
-		self.sc1.clear()
-		self.sc1.plot(x, y, '.', 'black')	
-		N = 1000
-		x1 = np.linspace(-(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], 
-			(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectations[x_], N)
-		y1 = np.linspace(-(self.parameters.covariation[y_][y_]  + 7)+ self.parameters.expectations[y_], 
-			(self.parameters.covariation[y_][y_] + 7 ) + self.parameters.expectations[y_], N)
-
-		X, Y = np.meshgrid(x1, y1)
-		Z = mlab.bivariate_normal(X, Y, math.sqrt(self.parameters.covariation[x_][x_]), 
-			math.sqrt(self.parameters.covariation[y_][y_]), self.parameters.expectations[x_],
-			self.parameters.expectations[y_], self.parameters.covariation[x_][y_])
-		self.sc1.contour(X, Y, Z, 10, 'red')	
-
-		self.analyzeCnt += 1
 		self.analyzedSignal.emit()		
 		
 	def generate(self):
@@ -860,7 +907,6 @@ class Lab4(Labs_):
 	def changeControlsVisibility(self):
 		self.calc.setDisabled(not self.isGenerated)
 		self.doDFT.setDisabled(not self.isGenerated)
-		self.showResults.setDisabled(self.results is None or not self.isGenerated)
 		
 	def count(self):
 		self.analyzeCnt = 0;
@@ -874,27 +920,30 @@ class Lab4(Labs_):
 			return
 		self.dft = np.fft.fft(self.u)
 		#DFT(self.u)
-		r = []
-		i = []
 		a = []
+		p = []
 		for d in self.dft:
-			r.append(d.real)
-			i.append(d.imag)
-			a.append(np.arctan(d.imag / d.real))
+			a.append(np.abs(d))
+			p.append(math.atan2(d.imag, d.real))
+			
 		self.sc2.clear()
-		self.sc2.axes.plot(range(self.N), r, '-', label = u"действительная часть")
-		self.sc2.axes.plot(range(self.N), i, '-', label = u'мнимая часть')
-		self.sc2.axes.plot(range(self.N), a, '-', label = u'амплитуда')
-		self.sc2.axes.legend( (u'действительная часть', u'мнимая часть', u'амплитуда') )
+		self.sc2.axes.plot(range(self.N), a, '-', label = u"амплитудный спектр")
+		self.sc2.axes.plot(range(self.N), p, '-', label = u'фазовый спектр')
+		self.sc2.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )
+		self.sc3.axes.relim()
+		self.sc2.axes.margins(0.1, 0.1)
 		self.sc2.draw()
 
 		self.sc3.clear()
-		self.sc3.axes.plot(range(self.N), r, '-', label = u"действительная часть")
-		self.sc3.axes.plot(range(self.N), i, '-', label = u'мнимая часть')
-		self.sc3.axes.legend( (u'действительная часть', u'мнимая часть') )
+		self.sc3.axes.plot(range(self.N), a, '-')
+		self.sc3.axes.relim()
+		self.sc3.axes.margins(0.3, 0.3)
 		self.sc3.draw()
 
 		self.sc4.clear()
-		self.sc4.axes.plot(range(self.N), a, '-')
+		#self.sc4.axes.axis(ymin = minp - delta, ymax = maxp + delta)
+		self.sc4.axes.plot(range(self.N), p, '-')
+		self.sc4.axes.relim()
+		self.sc4.axes.margins(0.1, 0.1)
 		self.sc4.draw()
 
