@@ -747,18 +747,6 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(self.resultsLabel, 1, 0, 1, 2)
 		self.solLayout.addWidget(self.resultsLabel1, 1, 2, 1, 2)
 
-		#label = QtGui.QLabel(u'Источник выборки')
-		#self.solLayout.addWidget(label, 0, 0)
-		#self.source = QtGui.QComboBox(self)
-		#self.solLayout.addWidget(self.source, 0, 1)
-		#self.source.addItems([u'Сгенерировать', u'Загрузить из файла'])
-		#self.source.currentIndexChanged.connect(self.changeControlsVisibility)
-		
-		#self.selectFile = QtGui.QPushButton(self)
-		#self.selectFile.setText(u'Выбрать файл')
-		#self.solLayout.addWidget(self.selectFile, 1, 0)
-		#self.selectFile.clicked.connect(self.selectFilePressed)
-
 		label = QtGui.QLabel(u'Сигнал 1')
 		self.solLayout.addWidget(label, 0, 1)
 		label = QtGui.QLabel(u'Сигнал 2')
@@ -782,6 +770,13 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(label, 3, 0)
 		self.dontSave = QtGui.QCheckBox(self)
 		self.solLayout.addWidget(self.dontSave, 3, 1)
+		self.selectFile = QtGui.QPushButton(self)
+		self.selectFile.setText(u'Загрузить из файла')
+		self.solLayout.addWidget(self.selectFile, 3, 2)
+		self.selectFile.clicked.connect(self.selectFilePressed)
+		self.isLoadedLabel = QtGui.QLabel(u'Сигнал(ы) не загружен(ы)')
+		self.solLayout.addWidget(self.isLoadedLabel, 3, 3)
+		
 		self.generateBtn = QtGui.QPushButton(self)
 		self.generateBtn.setText(u'Сгенерировать сигнал')
 		self.generateBtn.clicked.connect(self.generate)
@@ -959,39 +954,50 @@ class Lab4(Labs_):
 			self.draw()
 
 	def selectFilePressed(self):
-		fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file',  os.getcwd())
+		fname = QtGui.QFileDialog.getOpenFileName(self, 'Выберите сигнал 1',  os.getcwd())
 		if os.path.isfile(fname):
-			self.isGeneratedLabel.setText(u'Загружается сигнал...')
-			self.sample = []
+			self.isLoadedLabel.setText(u'Загружается сигнал...')
+			self.u = []
+			N = None
+			N1 = None
 			try:
 				f = open(fname, 'r')
-				res = f.read().split()
-				M = int(res[0])
-				exp = [float(res[i + 1]) for i in range(M)]
-				cov = []
-				l = M + 1
-				for i in range(M):
-					cov.append([])
-					for j in range(M):
-						cov[i].append(float(res[l]))
-						l += 1
-				parameters = DistributionParameters(1, M, exp, cov)
-				N = int(res[l])
-				self.expNum1.setValue(N)
-				l += 1
+				res = f.read().split('\n')
+				print res
+				N = int(res[2].split()[1])
+				print N
 				for i in range(N):
-					self.sample.append([])
-					for j in range(M):
-						self.sample[i].append(float(res[l]))
-						l += 1
+					print res[i + 3]
+					if res[i + 3] != '':
+						self.u.append(float(res[i + 3]))
 				f.close()
-				self.isGenerated = True
-				self.parametersGot(parameters)
-				self.isGeneratedLabel.setText(u'Сигнал загружен')			
-			except:
-				self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
-				showMessage(u'Ошибка', u'Некорректный формат файла')
 
+				fname = QtGui.QFileDialog.getOpenFileName(self, 'Выберите сигнал 2',  os.getcwd())	
+				if os.path.isfile(fname):
+					self.isGenerated = False
+					self.isLoadedLabel.setText(u'Загружается сигнал...')
+					self.u1 = []
+					f = open(fname, 'r')
+					res = f.read().split('\n')
+					N1 = int(res[2].split()[1])
+					for i in range(N1):
+						if res[i + 3] != '':
+							self.u1.append(float(res[i + 3]))
+					f.close()						
+			except:
+				self.isLoadedLabel.setText(u'Сигнал не загружен')
+				showMessage(u'Ошибка', u'Некорректный формат файла')
+			else:
+				self.isLoadedLabel.setText(u'Сигнал загружен')
+				self.expNum1.setValue(N)
+				self.N = N
+				self.expNum2.setValue(N1)
+				self.N1 = N1	
+				self.isGenerated = True
+				self.changeControlsVisibility()
+				self.draw()
+				self.parent.changeState('')
+							
 	def generated(self):
 		self.generatedCount += 1
 		if self.generatedCount < 2:
