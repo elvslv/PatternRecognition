@@ -17,6 +17,8 @@ import numpy.linalg as linalg
 #from scipy import interpolate
 from matplotlib import rcParams
 import copy
+import cmath
+#from spectrum import DaniellPeriodogram
 
 rcParams['text.usetex']=False
 rcParams['font.sans-serif'] = ['Times New Roman']
@@ -534,7 +536,6 @@ def x_corr(x, ind):
 			K[m] /= (N + 0.0)
 	else:
 		L = int(math.pow(2, math.ceil(math.log(2 * N, 2))))
-		print N, L
 		for i in range(N, L):
 			x.append(sum)
 		P = FFT(x)
@@ -544,16 +545,29 @@ def x_corr(x, ind):
 				K[m] += P[k] * (np.sin(2 * math.pi / L * m * k) * 1j)
 	return K
 
+def x_corr_(x):
+	result = np.correlate(x, x, mode='full')
+	return result[result.size/2:]
+
 def x_SPM(x, L):
-	P1 = FFT(x)
+	N = len(x)
+	P1 = []
+	for 	k in range(2 * N + 1):
+		t = complex(0)
+		for n in range(N):
+			t += x[n] * cmath.exp(-1j * 2 * math.pi * n * k / N)
+		P1.append(abs(t) * abs(t))
+
 	P = []
-	for k in range(L + 1):
+
+	for k in range(N):
 		P.append(0)
 		for l in range(-L, L + 1):
-			P[k] += P1[k + l]
+			P[k] += P1[k + l] if k + l >= 0 else P1[-k-l]
 		P[k] /= (2 * L + 1.0)
 	return P
-	
+
+
 def xy_corr(x, y, ind):
 	K = []
 	sum1 = 0
@@ -593,6 +607,10 @@ def xy_corr(x, y, ind):
 		z = np.fft.ifft(x)
 		K = [ (abs(z[m]) if m >= 0 else z[N - abs(m)]) for m in range(-N/2 + 1, N/2)]
 	return K
+
+def xy_corr_(x, y):
+	result = np.correlate(x, y, mode='full')
+	return result[result.size/2:]
 	
 def xy_SPM(x, y, L):
 	sum1 = 0
@@ -635,11 +653,29 @@ def xy_SPM_to_Real(P, ind, Gx, Gy):
 		elif ind == 4:
 			res.append(math.arctan(math.abs((P[i].imag + 0.0) / P[i].real)))
 		elif ind == 5:
-			res.append((P[i].real * P[i].real + P[i].imag * P[i].imag) / (Gx[k] * Gy[k]))
+			res.append((P[i].real * P[i].real + P[i].imag * P[i].imag) / (Gx[i] * Gy[i]))
 		elif ind == 6:
-			res.append(math.sqrt(P[i].real * P[i].real + P[i].imag * P[i].imag) / Gx[k])
+			res.append(math.sqrt(P[i].real * P[i].real + P[i].imag * P[i].imag) / Gx[i])
 	return res
 
+def xy_SPM_to_Real_(P, Gx, Gy):
+	res = [[] for i in range(6)]
+	for i in range(len(P)):
+		res[0].append(P[i].real)
+		res[1].append(P[i].imag)
+		res[2].append(abs(P[i]))
+		res[3].append(math.atan(abs((P[i].imag + 0.0)/  P[i].real)))
+		res[4].append(abs(P[i]) ** 2 / (1.0 * Gx[i] * Gy[i]) if Gx[i] * Gy[i] != 0 else 99999999999999999)
+		res[5].append(abs(P[i]) * 1.0 / Gx[i] if Gx[i] != 0 else 99999999999999999)
+	return res	
+
+def G(x, k):
+	result = []
+	X = np.fft.fft(x, k)
+	for i in range(len(X)):
+		result.append(1/len(X) * (abs(X[i]) * abs(X[i])))
+
+	return result
 
 class Lab4(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
@@ -659,8 +695,13 @@ class Lab4(Labs_):
 		self.sc5 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #x_corr
 		self.sc6 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #x_SPM
 		self.sc7 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #xy_corr
-		self.sc8 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #xy_SPM
-		
+		self.sc9 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc10 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc11 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc12 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100)
+		self.sc13 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #x_corr
+		self.sc14 = MyStaticMplCanvas(self, width=1000, height=1000, dpi=100) #x_SPM
+
 		self.sc1.axes.hold(True)
 		self.sc2.axes.hold(True)
 		self.sc3.axes.hold(True)
@@ -668,7 +709,12 @@ class Lab4(Labs_):
 		self.sc5.axes.hold(True)
 		self.sc6.axes.hold(True)
 		self.sc7.axes.hold(True)
-		self.sc8.axes.hold(True)
+		self.sc9.axes.hold(True)
+		self.sc10.axes.hold(True)
+		self.sc11.axes.hold(True)
+		self.sc12.axes.hold(True)
+		self.sc13.axes.hold(True)
+		self.sc14.axes.hold(True)		
 
 		tabWidget = QtGui.QTabWidget(self)
 		self.verticalLayout.addWidget(tabWidget)
@@ -678,9 +724,14 @@ class Lab4(Labs_):
 		tabWidget.addTab(self.sc4, u'Фазовый спектр')
 		tabWidget.addTab(self.sc5, u'Автокорреляционная функция')
 		tabWidget.addTab(self.sc6, u'Спектральная плотность мощности')
-		tabWidget.addTab(self.sc7, u'Автокорреляционная функция')
-		tabWidget.addTab(self.sc8, u'Спектральная плотность мощности')
-		
+		tabWidget.addTab(self.sc7, u'Взаимная корреляция')
+		tabWidget.addTab(self.sc9, u'C(k)')
+		tabWidget.addTab(self.sc10, u'S(k)')
+		tabWidget.addTab(self.sc11, u'А(k)')
+		tabWidget.addTab(self.sc12, u'Ф(k)')
+		tabWidget.addTab(self.sc13, u'Г(k)')
+		tabWidget.addTab(self.sc14, u'АЧХ(k)')
+
 		self.resultsLabel = QtGui.QLabel('')
 		self.resultsLabel1 = QtGui.QLabel('')
 
@@ -843,8 +894,13 @@ class Lab4(Labs_):
 		self.sc5.clear()
 		self.sc6.clear()
 		self.sc7.clear()
-		self.sc8.clear()
-		
+		self.sc9.clear()
+		self.sc10.clear()
+		self.sc11.clear()
+		self.sc12.clear()
+		self.sc13.clear()
+		self.sc14.clear()
+
 		self.isGeneratedLabel.setText(u'Сигнал не сгенерирован')
 
 	def hideSignalLayouts(self, index):
@@ -872,8 +928,13 @@ class Lab4(Labs_):
 		self.sc5.clear()
 		self.sc6.clear()
 		self.sc7.clear()
-		self.sc8.clear()
-
+		self.sc9.clear()
+		self.sc10.clear()
+		self.sc11.clear()
+		self.sc12.clear()
+		self.sc13.clear()
+		self.sc14.clear()
+		
 	def draw(self):
 		if (self.graphType.currentIndex() ==0 ):	
 			self.sc1.clear()
@@ -1036,7 +1097,8 @@ class Lab4(Labs_):
 		thread2.start()
 
 		self.sc5.clear()
-		K1 = x_corr(copy.copy(self.u), 1)
+		#K1 = x_corr(copy.copy(self.u), 1)
+		K1 = x_corr_(copy.copy(self.u))
 		a = []
 		p = []
 		for k in K1:
@@ -1054,25 +1116,21 @@ class Lab4(Labs_):
 		a = []
 		p = []
 		for k in K2:
-			a.append(np.abs(k))
-			p.append(math.atan2(k.imag, k.real))
-		self.sc6.axes.plot(range(len(K2)), a, '-', label = u"амплитудный спектр")
-		self.sc6.axes.plot(range(len(K2)), p, '-', label = u'фазовый спектр')
-		self.sc6.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )	
-		self.sc6.axes.relim()
-		self.sc6.axes.margins(0.1, 0.1)
-		self.sc6.draw()
+			self.sc6.axes.plot([2 * math.pi * i / len(K2) for i in range(len(K2))], K2, '-')
+			self.sc6.axes.relim()
+			self.sc6.axes.margins(0.1, 0.1)
+			self.sc6.draw()
 
 		if self.expNum2.value():
 			self.sc7.clear()
 			N = int(math.pow(2, math.ceil(math.log(2 * max(len(self.u), len(self.u1)), 2))))
 			K3 = xy_corr(copy.copy(self.u), copy.copy(self.u1), 1)
+			#K3 = xy_corr_(copy.copy(self.u), copy.copy(self.u1))
 			a = []
 			p = []
 			for k in K3:
 				a.append(np.abs(k))
 				p.append(math.atan2(k.imag, k.real))
-			print len(K3), len(a)
 			self.sc7.axes.plot(range(-N/2 + 1, N/2), a, '-', label = u"амплитудный спектр")
 			self.sc7.axes.plot(range(-N/2 + 1, N/2), p, '-', label = u'фазовый спектр')
 			self.sc7.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )	
@@ -1080,20 +1138,40 @@ class Lab4(Labs_):
 			self.sc7.axes.margins(0.1, 0.1)
 			self.sc7.draw()
 
-			self.sc8.clear()
-			K4 = xy_SPM(copy.copy(self.u), copy.copy(self.u1), self.L.value())
-			a = []
-			p = []
-			for k in K4:
-				a.append(np.abs(k))
-				p.append(math.atan2(k.imag, k.real))
-			self.sc8.axes.plot(range(len(K4)), a, '-', label = u"амплитудный спектр")
-			self.sc8.axes.plot(range(len(K4)), p, '-', label = u'фазовый спектр')
-			self.sc8.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )	
-			self.sc8.axes.relim()
-			self.sc8.axes.margins(0.1, 0.1)
-			self.sc8.draw()
 
+			K4 = xy_SPM(copy.copy(self.u), copy.copy(self.u1), self.L.value())
+			real_spm = xy_SPM_to_Real_(K4, G(self.u, len(K4)),  G(self.u1, len(K4)))
+			
+			self.sc9.axes.plot(range(len(real_spm[0])), real_spm[0], '-')
+			self.sc9.axes.relim()
+			self.sc9.axes.margins(0.1, 0.1)
+			self.sc9.draw()
+
+			self.sc10.axes.plot(range(len(real_spm[1])), real_spm[1], '-')
+			self.sc10.axes.relim()
+			self.sc10.axes.margins(0.1, 0.1)
+			self.sc10.draw()
+
+			self.sc11.axes.plot(range(len(real_spm[2])), real_spm[2], '-')
+			self.sc11.axes.relim()
+			self.sc11.axes.margins(0.1, 0.1)
+			self.sc11.draw()
+
+			self.sc12.axes.plot(range(len(real_spm[3])), real_spm[3], '-')
+			self.sc12.axes.relim()
+			self.sc12.axes.margins(0.1, 0.1)
+			self.sc12.draw()
+
+			self.sc13.axes.plot(range(len(real_spm[4])), real_spm[4], '-')
+			self.sc13.axes.relim()
+			self.sc13.axes.margins(0.1, 0.1)
+			self.sc13.draw()
+
+			self.sc14.axes.plot(range(len(real_spm[5])), real_spm[5], '-')
+			self.sc14.axes.relim()
+			self.sc14.axes.margins(0.1, 0.1)
+			self.sc14.draw()
+		
 	def DFT(self):
 		if not self.isGenerated:
 			return
