@@ -72,8 +72,10 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 		self.axes.margins(0.1, 0)
 		#self.axes.autoscale(enable=True, axis='both', tight=True)
-global signal12
-signal12 = None
+global signal12_1
+signal12_1 = None
+global signal12_2
+signal12_2 = None
 
 class DigitalSignal:
 	def __init__(self, N, parent, dx = 0):
@@ -413,13 +415,13 @@ class DigitalSignal11(DigitalSignal):
 		layout.addWidget(spinBox, 1, 1  + self.dx )
 		return layout				
 
-def signal12Changed(i):
-	if not signal12:
+def signal12_1Changed(i):
+	if not signal12_1:
 		return
-	p = signal12.layout.itemAtPosition(0, 1  + self.dx ).widget().value()
-	q = signal12.layout.itemAtPosition(1, 1  + self.dx ).widget().value()
-	a = signal12.layout.itemAtPosition(0, 3  + self.dx).widget()
-	b = signal12.layout.itemAtPosition(1, 3  + self.dx ).widget()
+	p = signal12_1.layout.itemAtPosition(0, 1).widget().value()
+	q = signal12_1.layout.itemAtPosition(1, 1).widget().value()
+	a = signal12_1.layout.itemAtPosition(0, 3).widget()
+	b = signal12_1.layout.itemAtPosition(1, 3).widget()
 	p1 = a.rowCount()
 	q1 = b.rowCount()
 	a.setRowCount(p)
@@ -430,7 +432,26 @@ def signal12Changed(i):
 	for i in range(q1, q):
 		item = QtGui.QTableWidgetItem('0.00')
 		b.setItem(i, 0, item)		
-	signal12.parent.changed()
+	signal12_1.parent.changed()
+
+def signal12_2Changed(i):
+	if not signal12_2:
+		return
+	p = signal12_2.layout.itemAtPosition(0, 1 + 2).widget().value()
+	q = signal12_2.layout.itemAtPosition(1, 1 + 2).widget().value()
+	a = signal12_2.layout.itemAtPosition(0, 3 + 2).widget()
+	b = signal12_2.layout.itemAtPosition(1, 3 + 2).widget()
+	p1 = a.rowCount()
+	q1 = b.rowCount()
+	a.setRowCount(p)
+	b.setRowCount(q)
+	for i in range(p1, p):
+		item = QtGui.QTableWidgetItem('0.00')
+		a.setItem(i, 0, item)
+	for i in range(q1, q):
+		item = QtGui.QTableWidgetItem('0.00')
+		b.setItem(i, 0, item)		
+	signal12_2.parent.changed()
 
 class DigitalSignal12(DigitalSignal):
 	def generate(self):
@@ -463,7 +484,7 @@ class DigitalSignal12(DigitalSignal):
 		layout.addWidget(label, 0, 0  + self.dx )
 		spinBox = QtGui.QSpinBox()
 		spinBox.setMinimum(0)
-		spinBox.valueChanged.connect(signal12Changed)
+		spinBox.valueChanged.connect(signal12_1Changed if not self.dx else signal12_2Changed)
 		layout.addWidget(spinBox, 0, 1  + self.dx )
 		label = QtGui.QLabel(u'a')
 		layout.addWidget(label, 0, 2  + self.dx )
@@ -475,7 +496,7 @@ class DigitalSignal12(DigitalSignal):
 		label = QtGui.QLabel(u'q')
 		layout.addWidget(label, 1, 0 + self.dx)
 		spinBox = QtGui.QSpinBox()
-		spinBox.valueChanged.connect(signal12Changed)
+		spinBox.valueChanged.connect(signal12_1Changed if not self.dx else signal12_2Changed)
 		spinBox.setMinimum(0)
 		layout.addWidget(spinBox, 1, 1  + self.dx )
 		label = QtGui.QLabel(u'b')
@@ -838,8 +859,8 @@ class Lab4(Labs_):
 			for j in range(layout.count()):
 				layout.itemAt(j).widget().setVisible(False)
 			if i == 11:
-				global signal12
-				signal12 = signal
+				global signal12_1
+				signal12_1 = signal
 
 		self.signalLayouts2 = []
 		for i in range(12):
@@ -851,7 +872,8 @@ class Lab4(Labs_):
 			for j in range(layout.count()):
 				layout.itemAt(j).widget().setVisible(False)
 			if i == 11:
-				signal12 = signal
+				global signal12_2
+				signal12_2 = signal
 
 		for i in range(12):
 			self.signalsCombobox1.addItem(str(i + 1))
@@ -1008,13 +1030,21 @@ class Lab4(Labs_):
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 		if not self.dontSave.isChecked():
-			f = open('DigitalSignal{0}.dat'.format(self.signalsCombobox1.currentIndex() + 1), 'w')
+			f = open('DigitalSignal{0}_1.dat'.format(self.signalsCombobox1.currentIndex() + 1), 'w')
 			f.write('1\n')
 			f.write('DigitalSignal{0}\n'.format(self.signalsCombobox1.currentIndex() + 1))
 			f.write('1 %s 1\n' % self.N)
 			for u in self.u:
 				f.write('%s\n' % u)
 			f.close()
+			if self.N1:
+				f = open('DigitalSignal{0}_2.dat'.format(self.signalsCombobox2.currentIndex() + 1), 'w')
+				f.write('1\n')
+				f.write('DigitalSignal{0}\n'.format(self.signalsCombobox2.currentIndex() + 1))
+				f.write('1 %s 1\n' % self.N1)
+				for u in self.u1:
+					f.write('%s\n' % u)
+				f.close()	
 
 	def analyzed(self):
 		self.analyzedCount += 1
