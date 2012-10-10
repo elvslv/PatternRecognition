@@ -1118,6 +1118,83 @@ class Lab4(Labs_):
 		self.calc.setDisabled(not self.isGenerated)
 		self.doDFT.setDisabled(not self.isGenerated)
 		self.checkDFT.setDisabled(not self.isGenerated)
+
+	def draw_x_corr(self):
+		self.sc5.clear()
+		K1 = x_corr_(copy.copy(self.u))
+		a = []
+		p = []
+		for k in K1:
+			a.append(np.abs(k))
+			p.append(math.atan2(k.imag, k.real))
+		self.sc5.axes.plot(range(len(K1)), a, '-', label = u"амплитудный спектр")
+		self.sc5.axes.plot(range(len(K1)), p, '-', label = u'фазовый спектр')
+		self.sc5.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )		
+		self.sc5.axes.relim()
+		self.sc5.axes.margins(0.1, 0.1)
+		self.sc5.draw()
+
+	def draw_x_spm(self):
+		self.sc6.clear()
+		K2 = x_SPM(copy.copy(self.u), self.L.value())
+		a = []
+		p = []
+		for k in K2:
+			self.sc6.axes.plot([2 * math.pi * i / len(K2) for i in range(len(K2))], K2, '-')
+			self.sc6.axes.relim()
+			self.sc6.axes.margins(0.1, 0.1)
+			self.sc6.draw()
+
+	def draw_xy_corr(self):
+		self.sc7.clear()
+		N = int(math.pow(2, math.ceil(math.log(2 * max(len(self.u), len(self.u1)), 2))))
+		K3 = xy_corr(copy.copy(self.u), copy.copy(self.u1), 1)
+		#K3 = xy_corr_(copy.copy(self.u), copy.copy(self.u1))
+		a = []
+		p = []
+		for k in K3:
+			a.append(np.abs(k))
+			p.append(math.atan2(k.imag, k.real))
+		self.sc7.axes.plot(range(-N/2 + 1, N/2), a, '-', label = u"амплитудный спектр")
+		self.sc7.axes.plot(range(-N/2 + 1, N/2), p, '-', label = u'фазовый спектр')
+		self.sc7.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )	
+		self.sc7.axes.relim()
+		self.sc7.axes.margins(0.1, 0.1)
+		self.sc7.draw()
+
+	def draw_xy_spm(self):
+		K4 = xy_SPM(copy.copy(self.u), copy.copy(self.u1), self.L.value())
+		real_spm = xy_SPM_to_Real_(K4, G(self.u, len(K4)),  G(self.u1, len(K4)))
+		
+		self.sc9.axes.plot(range(len(real_spm[0])), real_spm[0], '-')
+		self.sc9.axes.relim()
+		self.sc9.axes.margins(0.1, 0.1)
+		self.sc9.draw()
+
+		self.sc10.axes.plot(range(len(real_spm[1])), real_spm[1], '-')
+		self.sc10.axes.relim()
+		self.sc10.axes.margins(0.1, 0.1)
+		self.sc10.draw()
+
+		self.sc11.axes.plot(range(len(real_spm[2])), real_spm[2], '-')
+		self.sc11.axes.relim()
+		self.sc11.axes.margins(0.1, 0.1)
+		self.sc11.draw()
+
+		self.sc12.axes.plot(range(len(real_spm[3])), real_spm[3], '-')
+		self.sc12.axes.relim()
+		self.sc12.axes.margins(0.1, 0.1)
+		self.sc12.draw()
+
+		self.sc13.axes.plot(range(len(real_spm[4])), real_spm[4], '-')
+		self.sc13.axes.relim()
+		self.sc13.axes.margins(0.1, 0.1)
+		self.sc13.draw()
+
+		self.sc14.axes.plot(range(len(real_spm[5])), real_spm[5], '-')
+		self.sc14.axes.relim()
+		self.sc14.axes.margins(0.1, 0.1)
+		self.sc14.draw()
 		
 	def count(self):
 		self.analyzeCnt = 0;
@@ -1132,81 +1209,19 @@ class Lab4(Labs_):
 		thread2 = threading.Thread(target=self.countStatParams, args = (self.u1 if self.expNum2.value() else [], self.N1 if self.expNum2.value() else 0, self.resultsLabel1))
 		thread2.start()
 
-		self.sc5.clear()
-		#K1 = x_corr(copy.copy(self.u), 1)
-		K1 = x_corr_(copy.copy(self.u))
-		a = []
-		p = []
-		for k in K1:
-			a.append(np.abs(k))
-			p.append(math.atan2(k.imag, k.real))
-		self.sc5.axes.plot(range(len(K1)), a, '-', label = u"амплитудный спектр")
-		self.sc5.axes.plot(range(len(K1)), p, '-', label = u'фазовый спектр')
-		self.sc5.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )		
-		self.sc5.axes.relim()
-		self.sc5.axes.margins(0.1, 0.1)
-		self.sc5.draw()
+		thread3 = threading.Thread(target=self.draw_x_corr)
+		thread3.start()
 
-		self.sc6.clear()
-		K2 = x_SPM(copy.copy(self.u), self.L.value())
-		a = []
-		p = []
-		for k in K2:
-			self.sc6.axes.plot([2 * math.pi * i / len(K2) for i in range(len(K2))], K2, '-')
-			self.sc6.axes.relim()
-			self.sc6.axes.margins(0.1, 0.1)
-			self.sc6.draw()
+		thread4 = threading.Thread(target=self.draw_x_spm)
+		thread4.start()
 
 		if self.expNum2.value():
-			self.sc7.clear()
-			N = int(math.pow(2, math.ceil(math.log(2 * max(len(self.u), len(self.u1)), 2))))
-			K3 = xy_corr(copy.copy(self.u), copy.copy(self.u1), 1)
-			#K3 = xy_corr_(copy.copy(self.u), copy.copy(self.u1))
-			a = []
-			p = []
-			for k in K3:
-				a.append(np.abs(k))
-				p.append(math.atan2(k.imag, k.real))
-			self.sc7.axes.plot(range(-N/2 + 1, N/2), a, '-', label = u"амплитудный спектр")
-			self.sc7.axes.plot(range(-N/2 + 1, N/2), p, '-', label = u'фазовый спектр')
-			self.sc7.axes.legend( (u'амплитудный спектр', u'фазовый спектр') )	
-			self.sc7.axes.relim()
-			self.sc7.axes.margins(0.1, 0.1)
-			self.sc7.draw()
+			thread5 = threading.Thread(target=self.draw_xy_corr)
+			thread5.start()
 
+			thread6 = threading.Thread(target=self.draw_xy_spm)
+			thread6.start()
 
-			K4 = xy_SPM(copy.copy(self.u), copy.copy(self.u1), self.L.value())
-			real_spm = xy_SPM_to_Real_(K4, G(self.u, len(K4)),  G(self.u1, len(K4)))
-			
-			self.sc9.axes.plot(range(len(real_spm[0])), real_spm[0], '-')
-			self.sc9.axes.relim()
-			self.sc9.axes.margins(0.1, 0.1)
-			self.sc9.draw()
-
-			self.sc10.axes.plot(range(len(real_spm[1])), real_spm[1], '-')
-			self.sc10.axes.relim()
-			self.sc10.axes.margins(0.1, 0.1)
-			self.sc10.draw()
-
-			self.sc11.axes.plot(range(len(real_spm[2])), real_spm[2], '-')
-			self.sc11.axes.relim()
-			self.sc11.axes.margins(0.1, 0.1)
-			self.sc11.draw()
-
-			self.sc12.axes.plot(range(len(real_spm[3])), real_spm[3], '-')
-			self.sc12.axes.relim()
-			self.sc12.axes.margins(0.1, 0.1)
-			self.sc12.draw()
-
-			self.sc13.axes.plot(range(len(real_spm[4])), real_spm[4], '-')
-			self.sc13.axes.relim()
-			self.sc13.axes.margins(0.1, 0.1)
-			self.sc13.draw()
-
-			self.sc14.axes.plot(range(len(real_spm[5])), real_spm[5], '-')
-			self.sc14.axes.relim()
-			self.sc14.axes.margins(0.1, 0.1)
-			self.sc14.draw()
 		
 	def DFT(self):
 		if not self.isGenerated:
