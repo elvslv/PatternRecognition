@@ -850,7 +850,7 @@ class Lab4(Labs_):
 		self.solLayout.addWidget(self.signalsCombobox2, 9, 1)
 
 		self.signalLayouts1 = []
-		for i in range(12):
+		for i in range(1):
 			layout = QtGui.QGridLayout(self)
 			signal = globals()['DigitalSignal{0}'.format(i + 1)](0, self)
 			layout = signal.fillLayout(layout)
@@ -863,7 +863,7 @@ class Lab4(Labs_):
 				signal12_1 = signal
 
 		self.signalLayouts2 = []
-		for i in range(12):
+		for i in range(1):
 			layout = QtGui.QGridLayout(self)
 			signal = globals()['DigitalSignal{0}'.format(i + 1)](0, self, 2)
 			layout = signal.fillLayout(layout)
@@ -924,7 +924,7 @@ class Lab4(Labs_):
 		self.sc1.clear()
 		self.resultsLabel.setText('')
 		self.resultsLabel1.setText('')
-		for i in range(12):
+		for i in range(1):
 			layout = self.signalLayouts1[i]
 			for j in range(layout.count()):
 					layout.itemAt(j).widget().setVisible(i == self.signalsCombobox1.currentIndex())

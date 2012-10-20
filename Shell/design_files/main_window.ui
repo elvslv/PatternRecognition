@@ -36,7 +36,7 @@
        <enum>QTabWidget::Triangular</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="documentMode">
        <bool>false</bool>
@@ -94,6 +94,7 @@
     <addaction name="actionLab2"/>
     <addaction name="actionLab3"/>
     <addaction name="actionLab4"/>
+    <addaction name="actionLab5"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -290,6 +291,11 @@
   <action name="actionLab4">
    <property name="text">
     <string>Лабораторная работа №4</string>
+   </property>
+  </action>
+  <action name="actionLab5">
+   <property name="text">
+    <string>Лабораторная работа №5</string>
    </property>
   </action>
  </widget>

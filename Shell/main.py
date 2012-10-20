@@ -6,6 +6,7 @@ from Labs import*
 from Labs2 import*
 from Labs3 import *
 from Labs4 import *
+from Labs5 import *
 
 from PyQt4 import QtGui, QtCore
 
