@@ -18,6 +18,7 @@ import numpy.linalg as linalg
 from matplotlib import rcParams
 import copy
 import cmath
+import pypr.clustering.gmm as gmm
 #from spectrum import DaniellPeriodogram
 
 class MyMplCanvas(FigureCanvas):
@@ -52,9 +53,9 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.draw()
 
 	def clear(self):
-		#self.axes.hold(False)
+		self.axes.hold(False)
 		self.axes.plot([], [])
-		#self.axes.hold(True)
+		self.axes.hold(True)
 	
 	def draw_(self):
 		self.draw()
@@ -63,12 +64,28 @@ class MyStaticMplCanvas(MyMplCanvas):
 		self.axes.set_zorder(level)
 		
 class DistributionParameters():
-	def __init__(self, dimension, expectations, covariation, density):
-		self.dimension = dimension
+	def __init__(self, dimension, expectations, covariation, dispersion, density):
 		self.expectation = np.array(expectations)
 		self.covariation = np.array(covariation)
 		self.density = density
-			
+		self.dimension = dimension
+		self.dispersion = np.array(dispersion)
+	
+	def validate(self):
+		return self.covariationIsValid() and self.dispersionIsValid()
+		
+	def dispersionIsValid(self):
+		result = True
+		try:
+			for d in self.dispersion:
+				result = result and d > 0
+			if not result:
+				raise '123' 
+		except:
+			showMessage('Error', 'Dispersion must be non negative')
+			return False
+		return True
+		
 	def covariationIsValid(self):
 		try:
 			L = linalg.cholesky(self.covariation)
@@ -82,6 +99,12 @@ class DistributionParameters():
 					return False
 
 		return True
+		
+class LabParameters():
+	def __init__(self, dimension, distribution, lossMatrix):
+		self.dimension = dimension
+		self.distribution = distribution
+		self.lossMatrix = lossMatrix
 		
 class ResultsDialog(QtGui.QDialog):
 	def __init__(self, parent, parameters, results):
@@ -142,9 +165,11 @@ class DistributionParametersUI():
 		self.dimension = dimension
 		self.expectationVectors = []
 		self.covariationMatrixes = []
+		self.dispersionVectors = []
 		self.density = []
 		self.expLabels = []
 		self.covLabels = []
+		self.dispersionLabels = []
 		self.densityLabels = []
 		self.numberOfClasses = numberOfClasses
 		self.distribution = []
@@ -155,38 +180,52 @@ class DistributionParametersUI():
 			self.expLabels.append(QtGui.QLabel(u'Вектор средних %s' % (i + 1)))
 			self.expLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.expLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.expLabels[i], 3 + 3 * i, 0)
+			self.layout.addWidget(self.expLabels[i], 4 + 4 * i, 0)
 			self.expectationVectors.append(QtGui.QTableWidget(self.parent))
 			self.expectationVectors[i].setRowCount(1)
 			self.expectationVectors[i].setColumnCount(dimension)
 			self.expectationVectors[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.layout.addWidget(self.expectationVectors[i], 3 + 3 *i, 1)
+			self.layout.addWidget(self.expectationVectors[i], 4 + 4 *i, 1)
 
-			self.covLabels.append(QtGui.QLabel(u'Матрица ковариации %s' % (i + 1)))
+			self.covLabels.append(QtGui.QLabel(u'Нормированная корреляционная матрица %s' % (i + 1)))
 			self.covLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.covLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.covLabels[i], 4 + 3 * i, 0)
+			self.layout.addWidget(self.covLabels[i], 5 + 4 * i, 0)
 			self.covariationMatrixes.append(QtGui.QTableWidget(self.parent))
 			self.covariationMatrixes[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.layout.addWidget(self.covariationMatrixes[i], 4 + 3 * i, 1)
+			self.layout.addWidget(self.covariationMatrixes[i], 5 + 4 * i, 1)
 			self.covariationMatrixes[i].setRowCount(dimension)
 			self.covariationMatrixes[i].setColumnCount(dimension)
-			self.distribution.append(DistributionParameters(dimension, [], [], 0))
+			
+			self.dispersionLabels.append(QtGui.QLabel(u'Вектор дисперсий %s' % (i + 1)))
+			self.dispersionLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+			self.dispersionLabels[i].setMaximumSize(QtCore.QSize(150, 30))
+			self.layout.addWidget(self.dispersionLabels[i], 6 + 4 * i, 0)
+			self.dispersionVectors.append(QtGui.QTableWidget(self.parent))
+			self.dispersionVectors[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+			self.layout.addWidget(self.dispersionVectors[i], 6 + 4 * i, 1)
+			self.dispersionVectors[i].setRowCount(1)
+			self.dispersionVectors[i].setColumnCount(dimension)
+			
+			self.distribution.append(DistributionParameters(dimension, [], [], [], 0))
 			expectation = []
 			covariation = []
+			dispersion = []
 			for j in range(dimension):
-				print i, j, source[i].expectation[j] if source else 0
+				dispersion.append(source[i].dispersion[j] if source else 1)
+				item = QtGui.QTableWidgetItem(str(dispersion[j]))
+				self.dispersionVectors[i].setItem(0, j, item)	
 				expectation.append(source[i].expectation[j] if source else 0)
 				item = QtGui.QTableWidgetItem(str(expectation[j]))
 				self.expectationVectors[i].setItem(0, j, item)	
 			
 			self.distribution[i].expectation = np.array(expectation)	
-			
+			self.distribution[i].dispersion = np.array(dispersion)	
 
 			for k in range(dimension):
 				covariation.append([])
 				for j in range(dimension):
-					covariation[k].append(source[i].covariation[k][j] if source else 0)
+					covariation[k].append(source[i].covariation[k][j] if source else 0 if k != j else 1)
 					item = QtGui.QTableWidgetItem(str(covariation[k][j]))
 					self.covariationMatrixes[i].setItem(k, j, item)	
 			self.distribution[i].covariation = np.array(covariation)
@@ -194,14 +233,14 @@ class DistributionParametersUI():
 			self.densityLabels.append(QtGui.QLabel(u'Априорная вероятность %s' % (i + 1)))
 			self.densityLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.densityLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.densityLabels[i], 5 + 3 * i, 0)
+			self.layout.addWidget(self.densityLabels[i], 7 + 4 * i, 0)
 			self.density.append(QtGui.QDoubleSpinBox(self.parent))
 			self.density[i].setMinimum(0)
 			self.density[i].setMaximum(1)
-			density = source[i].density if source else 0
+			density = source[i].density if source else 1.0 / self.numberOfClasses if i != self.numberOfClasses - 1 or  self.numberOfClasses == 2 else 1 - (self.numberOfClasses - 1) * (1.0 / self.numberOfClasses)
 			self.density[i].setValue(density)
 			self.density[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.layout.addWidget(self.density[i], 5 + 3 *i, 1)	
+			self.layout.addWidget(self.density[i], 7 + 4 * i, 1)	
 			
 	def changeNumberOfClasses(self, numberOfClasses):
 		for i in range(numberOfClasses, len(self.expectationVectors)):
@@ -209,15 +248,18 @@ class DistributionParametersUI():
 			self.expLabels[i].setVisible(False)
 			self.covariationMatrixes[i].setVisible(False)
 			self.covLabels[i].setVisible(False)
+			self.dispersionVectors[i].setVisible(False)
+			self.dispersionLabels[i].setVisible(False)
 			self.density[i].setVisible(False)
 			self.densityLabels[i].setVisible(False)
-			
-			
+						
 		for i in range(self.numberOfClasses, min(len(self.expectationVectors), numberOfClasses)):
 			self.expectationVectors[i].setVisible(True)
 			self.expLabels[i].setVisible(True)		
 			self.covariationMatrixes[i].setVisible(True)
 			self.covLabels[i].setVisible(True)
+			self.dispersionVectors[i].setVisible(True)
+			self.dispersionLabels[i].setVisible(True)
 			self.density[i].setVisible(True)
 			self.densityLabels[i].setVisible(True)
 			
@@ -225,37 +267,53 @@ class DistributionParametersUI():
 			self.expLabels.append(QtGui.QLabel(u'Вектор средних %s' % (i + 1)))
 			self.expLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.expLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.expLabels[i], 3 + 3 * i, 0)
+			self.layout.addWidget(self.expLabels[i], 4 + 4 * i, 0)
 			self.expectationVectors.append(QtGui.QTableWidget(self.parent))
 			self.expectationVectors[i].setRowCount(1)
 			self.expectationVectors[i].setColumnCount(self.dimension)
 			self.expectationVectors[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.layout.addWidget(self.expectationVectors[i], 3 + 3 * i, 1)
-			self.covLabels.append(QtGui.QLabel(u'Матрица ковариации %s' % (i + 1)))
+			self.layout.addWidget(self.expectationVectors[i], 4 + 4 * i, 1)
+			
+			self.covLabels.append(QtGui.QLabel(u'Нормированная корреляционная матрица %s' % (i + 1)))
 			self.covLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.covLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.covLabels[i], 4 +  3 * i, 0)
+			self.layout.addWidget(self.covLabels[i], 5 +  4 * i, 0)
 			self.covariationMatrixes.append(QtGui.QTableWidget(self.parent))
 			self.covariationMatrixes[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 			self.covariationMatrixes[i].setRowCount(self.dimension)
 			self.covariationMatrixes[i].setColumnCount(self.dimension)
-			self.layout.addWidget(self.covariationMatrixes[i], 4 + 3* i, 1)
+			self.layout.addWidget(self.covariationMatrixes[i], 5 + 4 * i, 1)
+			
+			self.dispersionLabels.append(QtGui.QLabel(u'Вектор дисперсий %s' % (i + 1)))
+			self.dispersionLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+			self.dispersionLabels[i].setMaximumSize(QtCore.QSize(150, 30))
+			self.layout.addWidget(self.dispersionLabels[i], 6 +  4 * i, 0)
+			self.dispersionVectors.append(QtGui.QTableWidget(self.parent))
+			self.dispersionVectors[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+			self.dispersionVectors[i].setRowCount(self.dimension)
+			self.dispersionVectors[i].setColumnCount(self.dimension)
+			self.layout.addWidget(self.dispersionVectors[i], 6 + 4 * i, 1)
+			
 			for j in range(self.dimension):
 				item = QtGui.QTableWidgetItem(str(0))
 				self.expectationVectors[i].setItem(0, j, item)	
+				item = QtGui.QTableWidgetItem(str(0))
+				self.dispersionVectors[i].setItem(0, j, item)	
+				
 			for k in range(self.dimension):
 				for j in range(self.dimension):
-					item = QtGui.QTableWidgetItem(str(0))
+					item = QtGui.QTableWidgetItem(str(0) if k != j else str(1))
 					self.covariationMatrixes[i].setItem(k, j, item)	
+					
 			self.densityLabels.append(QtGui.QLabel(u'Априорная вероятность %s' % (i + 1)))
 			self.densityLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
 			self.densityLabels[i].setMaximumSize(QtCore.QSize(150, 30))
-			self.layout.addWidget(self.densityLabels[i], 5 + 3 * i, 0)
+			self.layout.addWidget(self.densityLabels[i], 7 + 4 * i, 0)
 			self.density.append(QtGui.QDoubleSpinBox(self.parent))
 			self.density[i].setMinimum(0)
 			self.density[i].setMaximum(1)
 			self.density[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.layout.addWidget(self.density[i], 5 + 3 *i, 1)	
+			self.layout.addWidget(self.density[i], 7 + 4 * i, 1)	
 
 			self.distribution.append(DistributionParameters(self.dimension, 
 				[0 for i in range(self.dimension)], 
@@ -271,6 +329,8 @@ class DistributionParametersUI():
 			self.covariationMatrixes[i].setRowCount(self.dimension)
 			self.covariationMatrixes[i].setColumnCount(self.dimension)
 			
+			self.dispersionVectors[i].setColumnCount(self.dimension)
+			
 			for k in range(self.dimension):
 				item = self.expectationVectors[i].item(0, k)
 				if not item:
@@ -278,6 +338,14 @@ class DistributionParametersUI():
 					self.expectationVectors[i].setItem(0, k, item)
 				elif item.text() == '':
 					item.setText('0')
+				
+				item = self.dispersionVectors[i].item(0, k)
+				if not item:
+					item = QtGui.QTableWidgetItem('0')
+					self.dispersionVectors[i].setItem(0, k, item)
+				elif item.text() == '':
+					item.setText('0')				
+					
 				for j in range(self.dimension):
 					item = self.covariationMatrixes[i].item(k, j)
 					if not item:
@@ -292,6 +360,7 @@ class DistributionParametersUI():
 			self.distribution.append(DistributionParameters(self.dimension, 
 				[float(self.expectationVectors[i].item(0, j).text()) for j in range(self.dimension)], 
 				[[float(self.covariationMatrixes[i].item(k, j).text()) for j in range(self.dimension)] for k in range(self.dimension)], 
+				[float(self.dispersionVectors[i].item(0, j).text()) for j in range(self.dimension)],
 				self.density[i].value()))
 		return self.distribution;
 
@@ -309,6 +378,14 @@ class DistributionParametersUI():
 			showMessage('Error', 'Densities sum mest be 1')
 		return result == 1
 		
+	
+	def validate(self):
+		result = True
+		for k in range(self.numberOfClasses):
+			result = result and self.distribution[k].validate();
+		return result
+	
+		
 class ParametersDialog(QtGui.QDialog):
 	def __init__(self, parent, initParams = None):
 		super(ParametersDialog, self).__init__(parent)
@@ -325,7 +402,7 @@ class ParametersDialog(QtGui.QDialog):
 		self.layout.addWidget(label, 0, 0)
 		self.classesNumber = QtGui.QSpinBox(self)
 		self.classesNumber.setMinimum(2)
-		self.classesNumber.setValue(len(initParams) if initParams else 2)
+		self.classesNumber.setValue(len(initParams.distribution) if initParams else 2)
 		self.classesNumber.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 		self.layout.addWidget(self.classesNumber, 0, 1)
 		self.classesNumber.valueChanged.connect(self.classesNumberChanged)
@@ -336,20 +413,42 @@ class ParametersDialog(QtGui.QDialog):
 		self.layout.addWidget(label, 1, 0)
 		self.distributionDimension = QtGui.QSpinBox(self)
 		self.distributionDimension.setMinimum(2)
-		self.distributionDimension.setValue(initParams[0].dimension if initParams else 2)
+		self.distributionDimension.setValue(initParams.distribution[0].dimension if initParams else 2)
 		self.distributionDimension.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 		self.layout.addWidget(self.distributionDimension, 1, 1)
 		self.distributionDimension.valueChanged.connect(self.dimensionChanged)
+
+		label = QtGui.QLabel(u'Матрица потерь')
+		label.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+		label.setMaximumSize(QtCore.QSize(150, 30))
+		self.layout.addWidget(label, 2, 0)
+		self.lossMatrix = QtGui.QTableWidget(self.parent)
+		self.lossMatrix.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+		self.layout.addWidget(self.lossMatrix, 2, 1)
+		self.lossMatrix.setRowCount(self.classesNumber.value())
+		self.lossMatrix.setColumnCount(self.classesNumber.value())
+		
+		for i in range(self.classesNumber.value()):
+			for j in range(self.classesNumber.value()):
+				item = QtGui.QTableWidgetItem(str(initParams.lossMatrix[i][j] if initParams else 0))
+				self.lossMatrix.setItem(i, j, item)	
 		
 		bb = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok or QDialogButtonBox.Cancel)
-		self.layout.addWidget(bb, 2, 0)
+		self.layout.addWidget(bb, 3, 0)
 		bb.accepted.connect(self.onAccept)
 
-		self.distributionParameters= DistributionParametersUI(self, self.layout, self.distributionDimension.value(), self.classesNumber.value(), initParams);
+		self.distributionParameters= DistributionParametersUI(self, 
+			self.layout, 
+			self.distributionDimension.value(), 
+			self.classesNumber.value(), 
+			initParams.distribution if initParams else None);
 			
 	def onAccept(self):
-		dp = self.distributionParameters.getDistributionParameters()
-		result = self.distributionParameters.covariationIsValid() and self.distributionParameters.densityIsValid()
+		dp = LabParameters(
+			self.distributionDimension.value(), 
+			self.distributionParameters.getDistributionParameters(),
+			np.array([[float(self.lossMatrix.item(k, j).text()) for j in range(self.classesNumber.value())] for k in range(self.classesNumber.value())]))
+		result = self.distributionParameters.validate() and self.distributionParameters.densityIsValid()
 		if result:
 			self.parent.parametersGot(dp)
 			self.parent.results = None
@@ -360,7 +459,15 @@ class ParametersDialog(QtGui.QDialog):
 
 	def classesNumberChanged(self):
 		self.distributionParameters.changeNumberOfClasses(self.classesNumber.value())	
-	
+		for i in range(self.classesNumber.value()):
+			for j in range(self.classesNumber.value()):
+				item = self.lossMatrix.item(i, j)
+				if not item:
+					item = QtGui.QTableWidgetItem('0')
+					self.lossMatrix.setItem(i, j, item)
+				elif item.text() == '':
+					item.setText('0')	
+		
 class Lab5(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
 	analyzedSignal = QtCore.pyqtSignal()
@@ -472,7 +579,7 @@ class Lab5(Labs_):
 		self.parameters = parameters
 		self.frstVar.clear()
 		self.scndVar.clear()
-		for i in range (self.parameters[0].dimension):
+		for i in range (self.parameters.distribution[0].dimension):
 			self.frstVar.addItem(str(i + 1))
 			self.scndVar.addItem(str(i + 1))
 		self.frstVar.setCurrentIndex(0)
@@ -530,9 +637,40 @@ class Lab5(Labs_):
 		N = self.expNum.value()
 		self.isGenerated = False
 		self.changeControlsVisibility()
-		for i in range(len(self.parameters)):
-			self.sample = np.random.multivariate_normal(self.parameters[i].expectation, 
-					self.parameters[i].covariation, N)
+		#for i in range(len(self.parameters.distribution)):
+		#	self.sample = np.random.multivariate_normal(self.parameters.distribution[i].expectation, 
+		#			self.parameters.distribution[i].covariation, N)
+		
+		classesNum = len(self.parameters.distribution)
+		
+		self.sample = []
+		self.sampleLength = [0 for i in range(classesNum)]
+			
+		for i in range(N):
+			r = random.random()
+			sum = 0
+			k = -1
+			while sum < r:
+				k += 1
+				sum += self.parameters.distribution[k].density
+			
+			self.sampleLength[k] += 1
+
+		colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+		self.sc1.clear()
+			
+		for i in range(classesNum):
+			self.sample.append(np.random.multivariate_normal(self.parameters.distribution[i].expectation, 
+					self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation, self.sampleLength[i])) 
+			
+			x = [self.sample[i][j][0] for j in range(len(self.sample[i]))]
+			y = [self.sample[i][j][1] for j in range(len(self.sample[i]))]
+						
+			self.sc1.plot(x, y, '.', colors[i])	
+
+		self.sc1.draw_()
+		
 		if not self.dontSave.isChecked():
 			f = open('result.txt', 'w')
 			f.write('%s %s\n' %  (self.expNum.value(), self.parameters.dimension))
@@ -542,6 +680,20 @@ class Lab5(Labs_):
 				f.write('\n');
 			f.close()
 		self.generatedSignal.emit()		
+
+	def drawSeparatingSurfaces(self):
+		self.W = [0.5 * np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) for i in range(self.classesNum)]
+		self.w = [np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) *  self.parameters.distribution[i].expectation for i in range(self.classesNum)]
+		self.w0 = [0.5 * np.transpose(self.parameters.distribution[i].expectation) * 
+			np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) * 
+			self.parameters.distribution[i].expectation - 
+			0.5 * np.log(np.linalg.det(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation)) + 
+			np.log(self.parameters.distribution[i].density) for i in range(self.classesNum)]	
+		amax = np.amax(self.sample)
+		amin = np.amin(self.sample)
+
+		x = [np.linspace(amin, amax) for i in range(self.parameters.dimension)]
+		return [np.transpose(x)  * self.W[i] * x + np.transpose(self.w[i]) * x ]		
 		
 	def countStatParams(self):
 		N = len(self.sample)
@@ -595,7 +747,7 @@ class Lab5(Labs_):
 		self.sc1.clear()
 		self.sc1.plot(x, y, '.', 'black')	
 		N = 100
-		x1 = np.linspace(-(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectation[x_], 
+		x1 = np.linspace(-(self.parameters.distribution.covariation[x_][x_] + 7) + self.parameters.expectation[x_], 
 			(self.parameters.covariation[x_][x_] + 7) + self.parameters.expectation[x_], N)
 		y1 = np.linspace(-(self.parameters.covariation[y_][y_]  + 7)+ self.parameters.expectation[y_], 
 			(self.parameters.covariation[y_][y_] + 7 ) + self.parameters.expectation[y_], N)
