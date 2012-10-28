@@ -2,6 +2,7 @@
 
 from PyQt4 import QtGui, QtCore
 import random, math
+import sys
 import os.path
 import os
 import time
@@ -20,6 +21,7 @@ import copy
 import cmath
 import pypr.clustering.gmm as gmm
 #from spectrum import DaniellPeriodogram
+from scipy.optimize import fsolve
 
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=5, dpi=100):
@@ -632,7 +634,27 @@ class Lab5(Labs_):
 		self.sc1.draw_()
 		self.changeControlsVisibility()
 		self.parent.changeState('')
-			
+
+	def extendGrid(self, curLen, linspace, k):
+		for i in range(curLen):
+			self.grid[i][k] = linspace[0]
+		j = curLen
+		for i in range(curLen):
+			for l in range(len(linspace) - 1):
+				for t in range(k):
+					self.grid[j][t] = self.grid[i][t]
+				self.grid[j][k] = linspace[l + 1]
+				j += 1
+
+	def generateGrid(self, amin, amax):
+		linspace = np.linspace(amin, amax)
+		self.grid = np.zeros((math.pow(len(linspace), self.parameters.dimension), self.parameters.dimension))
+		for i in range(len(linspace)):
+			self.grid[i][0] = linspace[i]
+
+		for i in range(self.parameters.dimension - 1):
+			self.extendGrid(int(math.pow(len(linspace), i + 1)), linspace, i + 1)
+		
 	def startGenerate(self):
 		N = self.expNum.value()
 		self.isGenerated = False
@@ -656,21 +678,28 @@ class Lab5(Labs_):
 			
 			self.sampleLength[k] += 1
 
+		x_ = self.frstVar.currentIndex()
+		y_ = self.scndVar.currentIndex()
+
 		colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
-		self.sc1.clear()
-			
-		for i in range(classesNum):
-			self.sample.append(np.random.multivariate_normal(self.parameters.distribution[i].expectation, 
-					self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation, self.sampleLength[i])) 
-			
-			x = [self.sample[i][j][0] for j in range(len(self.sample[i]))]
-			y = [self.sample[i][j][1] for j in range(len(self.sample[i]))]
-						
-			self.sc1.plot(x, y, '.', colors[i])	
+		self.minx = sys.maxint
+		self.miny = sys.maxint
+		self.maxx = -sys.maxint - 1
+		self.maxy = -sys.maxint - 1
 
-		self.sc1.draw_()
-		
+		self.sc1.clear()
+		l = 0		
+		for i in range(classesNum):
+			self.sample.extend(np.random.multivariate_normal(self.parameters.distribution[i].expectation, 
+					self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation, self.sampleLength[i])) 
+			x = [self.sample[l1 + l][x_] for l1 in range(self.sampleLength[i])]
+			y = [self.sample[l1 + l][y_] for l1 in range(self.sampleLength[i])]
+
+			self.sc1.plot(x, y, '.', colors[i])
+			l += self.sampleLength[i]
+		self.drawSeparatingSurfaces()
+			
 		if not self.dontSave.isChecked():
 			f = open('result.txt', 'w')
 			f.write('%s %s\n' %  (self.expNum.value(), self.parameters.dimension))
@@ -681,19 +710,69 @@ class Lab5(Labs_):
 			f.close()
 		self.generatedSignal.emit()		
 
-	def drawSeparatingSurfaces(self):
-		self.W = [0.5 * np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) for i in range(self.classesNum)]
-		self.w = [np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) *  self.parameters.distribution[i].expectation for i in range(self.classesNum)]
-		self.w0 = [0.5 * np.transpose(self.parameters.distribution[i].expectation) * 
-			np.linalg.inv(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation) * 
-			self.parameters.distribution[i].expectation - 
-			0.5 * np.log(np.linalg.det(self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation)) + 
-			np.log(self.parameters.distribution[i].density) for i in range(self.classesNum)]	
-		amax = np.amax(self.sample)
-		amin = np.amin(self.sample)
+	def analyze(self):
+		classesNum = len(self.parameters.distribution)
+		gmax = -sys.maxint - 1
+		argmax = 0
+		l = 0
+		mistakes = 0
+		for i in range(classesNum):
+			for j in range(self.sampleLength[i]):
+				gmax = -sys.maxint - 1
+				argmax = 0
+				for k in range(classesNum):
+					g = 	np.dot(np.dot(np.transpose(self.sample[l]), (self.W[k])),  self.sample[l]) +np.dot (np.transpose(self.w[k]), self.sample[l]) + self.w0[k]
+					if g > gmax:
+						gmax = g
+						argmax = k
+				if argmax != i:
+					mistakes += 1
+				l += 1
 
-		x = [np.linspace(amin, amax) for i in range(self.parameters.dimension)]
-		return [np.transpose(x)  * self.W[i] * x + np.transpose(self.w[i]) * x ]		
+		print mistakes, len(self.sample), (mistakes + 0.0) /  len(self.sample)
+	
+
+	def drawSeparatingSurfaces(self):
+		self.generateGrid(min(self.minx, self.miny), max(self.maxx, self.maxy))
+		classesNum = len(self.parameters.distribution)
+
+		g = []
+		x_ = self.frstVar.currentIndex()
+		y_ = self.scndVar.currentIndex()
+
+		colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+		self.W = []
+		self.w = []
+		self.w0 = []
+
+		x = []
+		y = []
+
+		for i in range(classesNum):
+			cov = self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation
+			self.W.append(0.5 * np.linalg.inv(cov))
+			self.w.append(np.dot(np.linalg.inv(cov), self.parameters.distribution[i].expectation))
+			self.w0.append(-0.5 * np.dot(np.dot(np.transpose(self.parameters.distribution[i].expectation),  np.linalg.inv(cov)),  self.parameters.distribution[i].expectation) -0.5 * np.log(np.linalg.det(cov)) + np.log(self.parameters.distribution[i].density))
+
+		def f(X):
+			#print np.transpose(X)  * (self.W[0] - self.W[1]) * X
+			return np.transpose(X)  * (self.W[0] - self.W[1]) * X + (np.transpose(self.w[0]) - np.transpose(self.w[1])) * X + self.w0[0] - self.w0[1]
+
+
+		eps = 1e-5
+
+		#for i in range(len(self.grid)):
+		#	t = f(self.grid[i])
+		#	#print t
+		#	if (np.linalg.norm(t) < eps):
+		#		x.append(self.grid[i][x_])
+		##		y.append(self.grid[i][y_])
+
+		#self.sc1.plot(x, y, ',', 'black')
+
+		self.sc1.draw_()
+
+		self.analyze()
 		
 	def countStatParams(self):
 		N = len(self.sample)
