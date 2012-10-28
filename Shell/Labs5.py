@@ -175,9 +175,6 @@ class DistributionParametersUI():
 		self.densityLabels = []
 		self.numberOfClasses = numberOfClasses
 		self.distribution = []
-		print source
-		print self.numberOfClasses
-		print dimension, numberOfClasses
 		for i in range(self.numberOfClasses):
 			self.expLabels.append(QtGui.QLabel(u'Вектор средних %s' % (i + 1)))
 			self.expLabels[i].setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
@@ -710,26 +707,47 @@ class Lab5(Labs_):
 			f.close()
 		self.generatedSignal.emit()		
 
+	def normDensity(self, x, mu, sigma):
+		return 1 / (math.pow(2 * np.pi, len(x) / 2)) * np.sqrt(np.linalg.det(sigma))  * np.exp(-0.5 * np.dot(np.dot(np.transpose(x - mu), np.linalg.inv(sigma)), x - mu))
+
 	def analyze(self):
 		classesNum = len(self.parameters.distribution)
 		gmax = -sys.maxint - 1
 		argmax = 0
 		l = 0
 		mistakes = 0
+		self.transformationMatrix = []
 		for i in range(classesNum):
+			self.transformationMatrix.append([0 for j in range(classesNum)])
+			RR = 0
 			for j in range(self.sampleLength[i]):
 				gmax = -sys.maxint - 1
 				argmax = 0
+				p = 0
+				R = 0
 				for k in range(classesNum):
 					g = 	np.dot(np.dot(np.transpose(self.sample[l]), (self.W[k])),  self.sample[l]) +np.dot (np.transpose(self.w[k]), self.sample[l]) + self.w0[k]
 					if g > gmax:
 						gmax = g
-						argmax = k
+						argmax = k	
+					#P(X)
+					p_x =  self.normDensity(self.sample[l], 
+						self.parameters.distribution[k].expectation, 
+						self.parameters.distribution[k].dispersion * self.parameters.distribution[k].covariation )
+					p += self.parameters.distribution[k].density * p_x
+					R += p_x * self.parameters.distribution[k].density * self.parameters.lossMatrix[i][k]
+
+				RR += R / p
+					
 				if argmax != i:
+					self.transformationMatrix[i][argmax] += 1
 					mistakes += 1
+				
 				l += 1
 
-		print mistakes, len(self.sample), (mistakes + 0.0) /  len(self.sample)
+		print (mistakes + 0.0) /  len(self.sample)
+		print self.transformationMatrix
+		print RR
 	
 
 	def drawSeparatingSurfaces(self):
