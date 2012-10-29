@@ -26,7 +26,7 @@ from scipy.optimize import fsolve
 class MyMplCanvas(FigureCanvas):
 	def __init__(self, parent=None, width=5, height=5, dpi=100):
 		self.fig = Figure(figsize=(width, height), dpi=dpi)
-		self.axes = self.fig.add_subplot(111)
+		self.axes = self.fig.add_subplot(111, aspect='equal')
 # We want the axes cleared every time plot() is called
 		#self.axes.hold(False)
 		FigureCanvas.__init__(self, self.fig)
@@ -555,6 +555,8 @@ class Lab5(Labs_):
 		self.results = None
 		self.changeControlsVisibility()
 
+		self.lock = threading.Lock()
+
 	def showStat(self):
 		statDialog = ResultsDialog(self, self.parameters, self.results)
 		statDialog.open()
@@ -643,14 +645,40 @@ class Lab5(Labs_):
 				self.grid[j][k] = linspace[l + 1]
 				j += 1
 
-	def generateGrid(self, amin, amax):
-		linspace = np.linspace(amin, amax)
+	def generateGridAndSeparatingSurfaces(self):
+		self.lock.acquire(True)
+		linspace = np.linspace(min(self.minx, self.miny), max(self.maxx, self.maxy),  500)
 		self.grid = np.zeros((math.pow(len(linspace), self.parameters.dimension), self.parameters.dimension))
 		for i in range(len(linspace)):
 			self.grid[i][0] = linspace[i]
 
 		for i in range(self.parameters.dimension - 1):
 			self.extendGrid(int(math.pow(len(linspace), i + 1)), linspace, i + 1)
+
+		x = []
+		y = []
+
+		x_ = self.frstVar.currentIndex()
+		y_ = self.scndVar.currentIndex()
+
+		def f(X, i, j):
+			g1 = np.dot(np.dot(np.transpose(X), (self.W[i])),  X) +np.dot (np.transpose(self.w[i]), X) + self.w0[i]
+			g0 = np.dot(np.dot(np.transpose(X), (self.W[j])),  X) +np.dot (np.transpose(self.w[j]), X) + self.w0[j]
+			return g0 - g1
+
+		eps = 0.1
+
+		self.g = [[], []]
+
+		for i in range(len(self.grid)):
+			for j in range(len(self.parameters.distribution)):
+				for k in range(j):
+					t = f(self.grid[i], j, k)
+					if (abs(t) < eps):
+						self.g[0].append(self.grid[i][x_])
+						self.g[1].append(self.grid[i][y_])
+
+		self.lock.release()
 		
 	def startGenerate(self):
 		N = self.expNum.value()
@@ -690,13 +718,26 @@ class Lab5(Labs_):
 		for i in range(classesNum):
 			self.sample.extend(np.random.multivariate_normal(self.parameters.distribution[i].expectation, 
 					self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation, self.sampleLength[i])) 
-			x = [self.sample[l1 + l][x_] for l1 in range(self.sampleLength[i])]
-			y = [self.sample[l1 + l][y_] for l1 in range(self.sampleLength[i])]
+			x = []
+			y = []
+			for l1 in range(self.sampleLength[i]):
+				x.append(self.sample[l1 + l][x_])
+				y.append(self.sample[l1 + l][y_])
+				self.maxx = max(self.maxx, self.sample[l1 + l][x_])
+				self.minx = min(self.minx, self.sample[l1 + l][x_])
+				self.maxy = max(self.maxy, self.sample[l1 + l][y_])
+				self.miny = min(self.miny, self.sample[l1 + l][y_])
+
 
 			self.sc1.plot(x, y, '.', colors[i])
 			l += self.sampleLength[i]
-		self.drawSeparatingSurfaces()
 			
+		threadGenerateGrid = threading.Thread(target=self.generateGridAndSeparatingSurfaces)
+		threadGenerateGrid.start()
+
+		#self.drawSeparatingSurfaces()
+		self.sc1.draw_()
+
 		if not self.dontSave.isChecked():
 			f = open('result.txt', 'w')
 			f.write('%s %s\n' %  (self.expNum.value(), self.parameters.dimension))
@@ -748,49 +789,37 @@ class Lab5(Labs_):
 		print (mistakes + 0.0) /  len(self.sample)
 		print self.transformationMatrix
 		print RR
+		self.analyzeCnt += 1
+		self.analyzedSignal.emit()		
 	
-
-	def drawSeparatingSurfaces(self):
-		self.generateGrid(min(self.minx, self.miny), max(self.maxx, self.maxy))
+	def generateSeperatingSurfacesParams(self):
+		self.lock.acquire(True)
+		
 		classesNum = len(self.parameters.distribution)
 
-		g = []
-		x_ = self.frstVar.currentIndex()
-		y_ = self.scndVar.currentIndex()
-
-		colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 		self.W = []
 		self.w = []
 		self.w0 = []
 
-		x = []
-		y = []
-
 		for i in range(classesNum):
 			cov = self.parameters.distribution[i].dispersion * self.parameters.distribution[i].covariation
-			self.W.append(0.5 * np.linalg.inv(cov))
+			self.W.append(-0.5 * np.linalg.inv(cov))
 			self.w.append(np.dot(np.linalg.inv(cov), self.parameters.distribution[i].expectation))
 			self.w0.append(-0.5 * np.dot(np.dot(np.transpose(self.parameters.distribution[i].expectation),  np.linalg.inv(cov)),  self.parameters.distribution[i].expectation) -0.5 * np.log(np.linalg.det(cov)) + np.log(self.parameters.distribution[i].density))
 
-		def f(X):
-			#print np.transpose(X)  * (self.W[0] - self.W[1]) * X
-			return np.transpose(X)  * (self.W[0] - self.W[1]) * X + (np.transpose(self.w[0]) - np.transpose(self.w[1])) * X + self.w0[0] - self.w0[1]
+		self.lock.release()
 
+	def drawSeparatingSurfaces(self):
+		classesNum = len(self.parameters.distribution)
+		self.lock.acquire(True)
 
-		eps = 1e-5
-
-		#for i in range(len(self.grid)):
-		#	t = f(self.grid[i])
-		#	#print t
-		#	if (np.linalg.norm(t) < eps):
-		#		x.append(self.grid[i][x_])
-		##		y.append(self.grid[i][y_])
-
-		#self.sc1.plot(x, y, ',', 'black')
+		self.sc1.plot(self.g[0], self.g[1], ',', 'black')
 
 		self.sc1.draw_()
+		self.lock.release()
 
-		self.analyze()
+		self.analyzeCnt += 1
+		self.analyzedSignal.emit()		
 		
 	def countStatParams(self):
 		N = len(self.sample)
@@ -866,6 +895,9 @@ class Lab5(Labs_):
 		thread = threading.Thread(target=self.startGenerate)
 		thread.start()
 
+		thread1 = threading.Thread(target=self.generateSeperatingSurfacesParams)
+		thread1.start()
+
 	def changeControlsVisibility(self):
 		i = self.source.currentIndex()
 		for item in self.gen[0]:
@@ -878,8 +910,8 @@ class Lab5(Labs_):
 	def count(self):
 		self.analyzeCnt = 0;
 		self.parent.changeState(u'Анализируется...')
-		thread1 = threading.Thread(target=self.startAnalyze)
+		thread1 = threading.Thread(target=self.drawSeparatingSurfaces)
 		thread1.start()
-		thread2 = threading.Thread(target=self.countStatParams)
+		thread2 = threading.Thread(target=self.analyze)
 		thread2.start()
 
