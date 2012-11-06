@@ -109,56 +109,35 @@ class LabParameters():
 		self.lossMatrix = lossMatrix
 		
 class ResultsDialog(QtGui.QDialog):
-	def __init__(self, parent, parameters, results):
+	def __init__(self, parent, probability, transf, sumRisk):
 		super(ResultsDialog, self).__init__(parent)
 		
 		self.parent = parent
-		self.parameters = parameters
-		self.results = results
+		self.probability = probability
+		self.transformationMatrix = transf
+		self.sumRisk = sumRisk
 		
 		self.layout = QtGui.QGridLayout(self)
 		self.layout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
 		self.setLayout(self.layout)
 
-		label = QtGui.QLabel(u'Теоретические данные')
-		self.layout.addWidget(label, 0, 1)
-		label = QtGui.QLabel(u'Выборочные данные')
-		self.layout.addWidget(label, 0, 2)
-		
-		label = QtGui.QLabel(u'Вектор средних')
+		label = QtGui.QLabel(u'Оценка среднего риска = %s\n\n\n' % self.sumRisk)
 		self.layout.addWidget(label, 1, 0)
-		self.expectationVector1 = QtGui.QTableWidget(self)
-		self.layout.addWidget(self.expectationVector1, 1, 1)
-		self.initExpectationsVector(self.parameters.expectation, self.expectationVector1, self.parameters.dimension)
 
-		self.expectationVector2 = QtGui.QTableWidget(self)
-		self.layout.addWidget(self.expectationVector2, 1, 2)
-		self.initExpectationsVector(self.results.expectation, self.expectationVector2, self.results.dimension)
-
-		label = QtGui.QLabel(u'Матрица ковариации')
+		label = QtGui.QLabel(u'Оценка вероятности = %s\n\n\n' % self.probability)
 		self.layout.addWidget(label, 2, 0)
-		self.covariationMatrix1 = QtGui.QTableWidget(self)
-		self.layout.addWidget(self.covariationMatrix1, 2, 1)
-		self.initCovariationMatrix(self.parameters.covariation, self.covariationMatrix1, self.parameters.dimension)
 
-		self.covariationMatrix2 = QtGui.QTableWidget(self)
-		self.layout.addWidget(self.covariationMatrix2, 2, 2)
-		self.initCovariationMatrix(self.results.covariation, self.covariationMatrix2, self.results.dimension)
+		label = QtGui.QLabel(u'Матрица трансформации')
+		self.layout.addWidget(label, 3, 0)
+		self.transformationMatrix_ = QtGui.QTableWidget(self)
+		self.layout.addWidget(self.transformationMatrix_, 4, 0)
+		self.transformationMatrix_.setRowCount(len(self.transformationMatrix))
+		self.transformationMatrix_.setColumnCount(len(self.transformationMatrix[0]))
+		for i in range(len(self.transformationMatrix)):
+			for j in range(len(self.transformationMatrix[0])):
+				item = QtGui.QTableWidgetItem(str(self.transformationMatrix[i][j]))
+				self.transformationMatrix_.setItem(i, j, item)
 
-	def initExpectationsVector(self, source, dest, dimension):
-		dest.setColumnCount(dimension)
-		dest.setRowCount(1)
-		for i in range(dimension):
-			item = QtGui.QTableWidgetItem(str(source[i]))
-			dest.setItem(0, i, item)
-
-	def initCovariationMatrix(self, source, dest, dimension):
-		dest.setRowCount(dimension)
-		dest.setColumnCount(dimension)
-		for i in range(dimension):
-			for j in range(dimension):
-				item = QtGui.QTableWidgetItem(str(source[i][j]))
-				dest.setItem(i, j, item)
 	
 class DistributionParametersUI():
 	def __init__(self, parent, layout, dimension, numberOfClasses, source):
@@ -289,14 +268,14 @@ class DistributionParametersUI():
 			self.layout.addWidget(self.dispersionLabels[i], 6 +  4 * i, 0)
 			self.dispersionVectors.append(QtGui.QTableWidget(self.parent))
 			self.dispersionVectors[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
-			self.dispersionVectors[i].setRowCount(self.dimension)
+			self.dispersionVectors[i].setRowCount(1)
 			self.dispersionVectors[i].setColumnCount(self.dimension)
 			self.layout.addWidget(self.dispersionVectors[i], 6 + 4 * i, 1)
 			
 			for j in range(self.dimension):
 				item = QtGui.QTableWidgetItem(str(0))
 				self.expectationVectors[i].setItem(0, j, item)	
-				item = QtGui.QTableWidgetItem(str(0))
+				item = QtGui.QTableWidgetItem(str(1))
 				self.dispersionVectors[i].setItem(0, j, item)	
 				
 			for k in range(self.dimension):
@@ -314,9 +293,13 @@ class DistributionParametersUI():
 			self.density[i].setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
 			self.layout.addWidget(self.density[i], 7 + 4 * i, 1)	
 
+			# dimension, expectations, covariation, dispersion, density
+			
 			self.distribution.append(DistributionParameters(self.dimension, 
 				[0 for i in range(self.dimension)], 
-				[[0 for i in range(self.dimension)] for j in range(self.dimension)], 0))
+				[[0 if i != j else 1 for i in range(self.dimension)] for j in range(self.dimension)], 
+				[1 for i in range(self.dimension)], 
+				0))
 			
 		self.numberOfClasses = numberOfClasses
 		
@@ -429,7 +412,7 @@ class ParametersDialog(QtGui.QDialog):
 		
 		for i in range(self.classesNumber.value()):
 			for j in range(self.classesNumber.value()):
-				item = QtGui.QTableWidgetItem(str(initParams.lossMatrix[i][j] if initParams else 0))
+				item = QtGui.QTableWidgetItem(str(initParams.lossMatrix[i][j] if initParams else 0 if i == j else 1))
 				self.lossMatrix.setItem(i, j, item)	
 		
 		bb = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok or QDialogButtonBox.Cancel)
@@ -457,16 +440,18 @@ class ParametersDialog(QtGui.QDialog):
 		self.distributionParameters.changeDimension(self.distributionDimension.value())	
 
 	def classesNumberChanged(self):
-		self.distributionParameters.changeNumberOfClasses(self.classesNumber.value())	
+		self.distributionParameters.changeNumberOfClasses(self.classesNumber.value())
+		self.lossMatrix.setRowCount(self.classesNumber.value())	
+		self.lossMatrix.setColumnCount(self.classesNumber.value())	
 		for i in range(self.classesNumber.value()):
 			for j in range(self.classesNumber.value()):
 				item = self.lossMatrix.item(i, j)
 				if not item:
-					item = QtGui.QTableWidgetItem('0')
+					item = QtGui.QTableWidgetItem('0' if i == j else '1')
 					self.lossMatrix.setItem(i, j, item)
 				elif item.text() == '':
-					item.setText('0')	
-		
+					item.setText('0' if i == j else '1')	
+	
 class Lab5(Labs_):
 	generatedSignal = QtCore.pyqtSignal()
 	analyzedSignal = QtCore.pyqtSignal()
@@ -508,7 +493,7 @@ class Lab5(Labs_):
 		self.expNum = QtGui.QSpinBox(self)
 		self.solLayout.addWidget(self.expNum, 2, 1)
 		self.expNum.setRange(1, 1000000000)
-		self.expNum.setValue(100000)
+		self.expNum.setValue(10000)
 		
 		self.gen = [[label, self.expNum]]
 		
@@ -546,19 +531,23 @@ class Lab5(Labs_):
 		self.solLayout.addWidget(self.scndVar, 6, 1)
 
 		self.showResults = QtGui.QPushButton(self)
-		self.showResults.setText(u'Показать выборочные данные')
+		self.showResults.setText(u'Характеристики качества классификации')
 		self.showResults.clicked.connect(self.showStat)
 		self.solLayout.addWidget(self.showResults, 7, 0)
 			
 		self.isGenerated = False	
 		self.parameters = None	
 		self.results = None
+		self.analyzeCnt = 0;
 		self.changeControlsVisibility()
 
+		self.sigma = None
+
+		
 		self.lock = threading.Lock()
 
 	def showStat(self):
-		statDialog = ResultsDialog(self, self.parameters, self.results)
+		statDialog = ResultsDialog(self, self.probability, self.transformationMatrix, self.RR)
 		statDialog.open()
 
 	def varIndexChanged(self, var, index):
@@ -577,6 +566,7 @@ class Lab5(Labs_):
 		paramsDialog.open()
 	
 	def parametersGot(self, parameters):
+		self.sigma = None
 		self.parameters = parameters
 		self.frstVar.clear()
 		self.scndVar.clear()
@@ -634,49 +624,45 @@ class Lab5(Labs_):
 		self.changeControlsVisibility()
 		self.parent.changeState('')
 
-	def extendGrid(self, curLen, linspace, k):
-		for i in range(curLen):
-			self.grid[i][k] = linspace[0]
-		j = curLen
-		for i in range(curLen):
-			for l in range(len(linspace) - 1):
-				for t in range(k):
-					self.grid[j][t] = self.grid[i][t]
-				self.grid[j][k] = linspace[l + 1]
-				j += 1
-
 	def generateGridAndSeparatingSurfaces(self):
+		#print "generateGridAndSeparatingSurfaces -- wait for mutex"
 		self.lock.acquire(True)
-		linspace = np.linspace(min(self.minx, self.miny), max(self.maxx, self.maxy),  500)
-		self.grid = np.zeros((math.pow(len(linspace), self.parameters.dimension), self.parameters.dimension))
-		for i in range(len(linspace)):
-			self.grid[i][0] = linspace[i]
+		H = 100
+		W = 100
 
-		for i in range(self.parameters.dimension - 1):
-			self.extendGrid(int(math.pow(len(linspace), i + 1)), linspace, i + 1)
-
-		x = []
-		y = []
+		x = np.linspace(self.minx, self.maxx, W)
+		y = np.linspace(self.miny, self.maxy, H)
 
 		x_ = self.frstVar.currentIndex()
 		y_ = self.scndVar.currentIndex()
 
-		def f(X, i, j):
-			g1 = np.dot(np.dot(np.transpose(X), (self.W[i])),  X) +np.dot (np.transpose(self.w[i]), X) + self.w0[i]
-			g0 = np.dot(np.dot(np.transpose(X), (self.W[j])),  X) +np.dot (np.transpose(self.w[j]), X) + self.w0[j]
-			return g0 - g1
+		def f(i, x, y, x_, y_, l):
+			X = []
+			for j in range(l):
+				X.append(0 if j != x_ and j != y_ else x if j == x_ else y if j == y_ else 0)
+			g0 = np.dot(np.dot(np.transpose(X), (self.W[i])),  X) +np.dot (np.transpose(self.w[i]), X) + self.w0[i]
+			return g0
 
 		eps = 0.1
 
 		self.g = [[], []]
 
-		for i in range(len(self.grid)):
-			for j in range(len(self.parameters.distribution)):
-				for k in range(j):
-					t = f(self.grid[i], j, k)
-					if (abs(t) < eps):
-						self.g[0].append(self.grid[i][x_])
-						self.g[1].append(self.grid[i][y_])
+		m = []
+		for i in range(W):
+			m.append([])
+			for j in range(H):
+				m[i].append(0)
+				r = []
+				for k in range(len(self.parameters.distribution)):
+					r.append(f(k, x[i], y[j], x_, y_, self.parameters.dimension))
+					if r[k] > r[m[i][j]]:
+						m[i][j] = k;
+						
+		for i in range(W - 1):
+			for j in range(H - 1):
+				if m[i][j] != m[i + 1][j] or m[i][j] != m[i][j + 1]:
+					self.g[0].append(x[i])
+					self.g[1].append(y[j])
 
 		self.lock.release()
 		
@@ -748,9 +734,24 @@ class Lab5(Labs_):
 			f.close()
 		self.generatedSignal.emit()		
 
-	def normDensity(self, x, mu, sigma):
-		return 1 / (math.pow(2 * np.pi, len(x) / 2)) * np.sqrt(np.linalg.det(sigma))  * np.exp(-0.5 * np.dot(np.dot(np.transpose(x - mu), np.linalg.inv(sigma)), x - mu))
+	def normDensity(self, x, mu, k):
+		res = 1 / (math.pow(2 * np.pi, len(x) / 2)) *  self.sigma_(k, 0) * np.exp(-0.5 * np.dot(np.dot(np.transpose(x - mu), self.sigma_(k, 1)), x - mu))
+		#print res
+		return res
 
+	def sigma_(self, k, i):
+		if not self.sigma:
+			self.sigma = [0 for j in range( len(self.parameters.distribution))]
+		
+		if not self.sigma[k]:
+			self.sigma[k] = [0, 0]
+			s = self.parameters.distribution[k].dispersion * self.parameters.distribution[k].covariation
+			self.sigma[k][0] = np.sqrt(np.linalg.det(s))
+			self.sigma[k][1] = np.linalg.inv(s)
+			#print self.sigma[k][0]
+			#print self.sigma[k][1]
+		#print k, len(self.sigma), len(self.sigma[k]), i
+		return self.sigma[k][i]
 	def analyze(self):
 		classesNum = len(self.parameters.distribution)
 		gmax = -sys.maxint - 1
@@ -758,41 +759,50 @@ class Lab5(Labs_):
 		l = 0
 		mistakes = 0
 		self.transformationMatrix = []
+		RR = 0
 		for i in range(classesNum):
 			self.transformationMatrix.append([0 for j in range(classesNum)])
-			RR = 0
 			for j in range(self.sampleLength[i]):
 				gmax = -sys.maxint - 1
 				argmax = 0
-				p = 0
-				R = 0
 				for k in range(classesNum):
-					g = 	np.dot(np.dot(np.transpose(self.sample[l]), (self.W[k])),  self.sample[l]) +np.dot (np.transpose(self.w[k]), self.sample[l]) + self.w0[k]
+					g = np.dot(np.dot(np.transpose(self.sample[l]), (self.W[k])),  self.sample[l]) +np.dot (np.transpose(self.w[k]), self.sample[l]) + self.w0[k]
 					if g > gmax:
 						gmax = g
 						argmax = k	
 					#P(X)
-					p_x =  self.normDensity(self.sample[l], 
-						self.parameters.distribution[k].expectation, 
-						self.parameters.distribution[k].dispersion * self.parameters.distribution[k].covariation )
-					p += self.parameters.distribution[k].density * p_x
-					R += p_x * self.parameters.distribution[k].density * self.parameters.lossMatrix[i][k]
-
-				RR += R / p
-					
+								
 				if argmax != i:
 					self.transformationMatrix[i][argmax] += 1
 					mistakes += 1
 				
 				l += 1
+		r = []
+		RR = 0
+		for k in range(classesNum):
+			r.append(0)
+			l = 0
+			self.sigma_(k, 0)
+			self.sigma_(k, 1)
+			for i in range(classesNum):
+				p = 0
+				for j in range(self.sampleLength[i]):
+					p += self.normDensity(self.sample[l], self.parameters.distribution[k].expectation, k)
+					l += 1
+					#print self.parameters.distribution[k].expectation, self.sigma_(k, 0), self.sigma_(k, 1)
+					#print p
+				r[k] += self.parameters.lossMatrix[k][i] * p
+				
+			RR += r[k] * self.parameters.distribution[k].density;
 
-		print (mistakes + 0.0) /  len(self.sample)
-		print self.transformationMatrix
-		print RR
+		
+		self.probability = (mistakes + 0.0) /  len(self.sample) 
+		self.RR = RR
 		self.analyzeCnt += 1
 		self.analyzedSignal.emit()		
 	
 	def generateSeperatingSurfacesParams(self):
+		#print "generateSeperatingSurfacesParams -- wait for mutex"
 		self.lock.acquire(True)
 		
 		classesNum = len(self.parameters.distribution)
@@ -811,8 +821,9 @@ class Lab5(Labs_):
 
 	def drawSeparatingSurfaces(self):
 		classesNum = len(self.parameters.distribution)
+		#print "drawSeparatingSurfaces -- wait for mutex"
 		self.lock.acquire(True)
-
+		#print "got mutex"
 		self.sc1.plot(self.g[0], self.g[1], ',', 'black')
 
 		self.sc1.draw_()
@@ -820,43 +831,7 @@ class Lab5(Labs_):
 
 		self.analyzeCnt += 1
 		self.analyzedSignal.emit()		
-		
-	def countStatParams(self):
-		N = len(self.sample)
-		M = self.parameters.dimension
-		m = [0 for i in range(M)]
-		for i in range(M):
-			sum = 0
-			for j in range(N):
-				sum += self.sample[j][i]
-			m[i] = (sum + 0.0) / N
-
-		r = [[0 for i in range(M)] for j in range(M)]
-		for j in range(M):
-			for l in range(j, M):
-				sum = 0
-				for i in range(N):
-					sum += (self.sample[i][j] - m[j]) * (self.sample[i][l] - m[l])
-				r[j][l] = r[l][j] = (sum + 0.0) / N
-
-		self.results = DistributionParameters(1, M, m, r)
-
-		x_ = self.frstVar.currentIndex()
-		y_ = self.scndVar.currentIndex()
-		N = 100
-		x1 = np.linspace(-(self.results.covariation[x_][x_] + 7) + self.results.expectation[x_], 
-			(self.results.covariation[x_][x_] + 7) + self.results.expectation[x_], N)
-		y1 = np.linspace(-(self.results.covariation[y_][y_] + 7) + self.results.expectation[y_], 
-			(self.results.covariation[y_][y_] + 7) + self.results.expectation[y_], N)
-
-		X, Y = np.meshgrid(x1, y1)
-		Z = mlab.bivariate_normal(X, Y, math.sqrt(self.results.covariation[x_][x_]), 
-			math.sqrt(self.results.covariation[y_][y_]), self.results.expectation[x_],
-			self.results.expectation[y_], self.results.covariation[x_][y_])
-		self.sc1.contour(X, Y, Z, 10, 'yellow')	
-		self.analyzeCnt += 1
-		self.analyzedSignal.emit()	
-		
+			
 	def startAnalyze(self):
 		x_ = self.frstVar.currentIndex()
 		y_ = self.scndVar.currentIndex()
@@ -905,7 +880,7 @@ class Lab5(Labs_):
 		self.selectFile.setVisible(i)
 		self.generateBtn.setDisabled(self.parameters is None)
 		self.calc.setDisabled(self.parameters is None or not self.isGenerated)
-		self.showResults.setDisabled(self.results is None or not self.isGenerated)
+		self.showResults.setDisabled(self.analyzeCnt < 2)
 		
 	def count(self):
 		self.analyzeCnt = 0;
