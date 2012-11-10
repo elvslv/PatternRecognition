@@ -630,8 +630,8 @@ class Lab5(Labs_):
 		H = 100
 		W = 100
 
-		x = np.linspace(self.minx, self.maxx, W)
-		y = np.linspace(self.miny, self.maxy, H)
+		x = np.linspace(self.sc1.axes.get_xlim()[0], self.sc1.axes.get_xlim()[1], W)
+		y = np.linspace(self.sc1.axes.get_ylim()[0], self.sc1.axes.get_ylim()[1], H)
 
 		x_ = self.frstVar.currentIndex()
 		y_ = self.scndVar.currentIndex()
